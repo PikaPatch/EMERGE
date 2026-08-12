@@ -1,0 +1,16 @@
+{
+    "SMID": "191108plc1p1",
+    "SM": "WT_Sample6",
+    "CellID": "Zaaaapaa",
+    "CellName": "ABalapaa",
+    "Fate": "Unspecified",
+    "TP": 85,
+    "Vol": 139.01155,
+    "Sur": 177.4114,
+    "ConCells": "ABalaaap|ABalapap|ABalappa|ABalpaap|ABalpppa|ABarpaaa|ABplaaaa",
+    "ConCellAreas": "26.096306|32.277813|7.0554595|15.8239355|1.598198|2.7286308|22.413754",
+    "Range": [
+        71,
+        93
+    ]
+}

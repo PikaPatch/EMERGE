@@ -1,0 +1,20 @@
+{
+    "ABalapaa": {
+        "CellName": "ABalapaa",
+        "ID": "Zaaaapaa",
+        "DID": 132,
+        "TP": 85,
+        "CoreyShapeFactor": 0.762552461299038,
+        "DiameterSphericity": 0.741184664736246,
+        "ElongationRatio": 1.29144287017937,
+        "GeneralSphericity": 0.737498899085901,
+        "HayakawaFlatnessRatio": 1.32212254711653,
+        "HayakawaRoundness": 0.11332287259415,
+        "HuangShapeFactor": 0.722671276972889,
+        "InterceptSphericity": 0.803931371412822,
+        "MaximumProjectionSphericity": 0.834666823573856,
+        "PivotabilityIndex": 0.866577336260122,
+        "SpreadingIndex": 0.911586918143968,
+        "WilsonFlatnessIndex": 0.671014844148514
+    }
+}
