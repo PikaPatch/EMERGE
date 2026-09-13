@@ -1,5 +1,5 @@
 import { LineageColor2 } from '@/config/LineageColor';
-import { ColorScaler,ColorScalerShape } from "@/components/utils/ColorScaler";
+import { ColorScaler,ColorScalerShape,ColorScalerShapeMedian } from "@/components/utils/ColorScaler";
 
 const { COL_ExpNaN,COL_NoExp } = {COL_ExpNaN:'white',COL_NoExp: '#333'};
 
@@ -109,6 +109,42 @@ export const shapeCol = (id, tp,range,ColorData) => {
   if (ColorData?.[id]?.[tp] >= 0 ) {
     exp = ColorData?.[id]?.[tp];
     const ExpColorScaler = ColorScalerShape(range);
+    return ExpColorScaler(exp);
+  } else {
+    // at the tail of lineage tree
+    return COL_NoExp;
+  }
+}
+
+export const VolCol = (id, tp,range,ColorData) => {
+  // no ColorData (when selecting gene)
+  if (Object.keys(ColorData).length === 0 ){
+    return COL_ExpNaN;
+  }
+  // if this is the special data
+  if (tp<0){
+    return COL_ExpNaN;
+  }
+  // if ColorData have no this cell or tp (before the expression data start)
+  if (! (ColorData.hasOwnProperty(id)) ){
+    return COL_ExpNaN;
+  }
+
+  let exp = 0;
+  // SingleCell data
+  if (typeof ColorData?.[id] === 'number') {
+    exp = ColorData?.[id]
+    const Scaler = ColorScalerShapeMedian(range);
+    return Scaler(exp)
+  }
+
+  if (! (ColorData[id].hasOwnProperty(tp))){
+    return COL_ExpNaN;
+  }
+
+  if (ColorData?.[id]?.[tp] >= 0 ) {
+    exp = ColorData?.[id]?.[tp];
+    const ExpColorScaler = ColorScalerShapeMedian(range);
     return ExpColorScaler(exp);
   } else {
     // at the tail of lineage tree

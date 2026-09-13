@@ -28,6 +28,13 @@ export const ColorScalerShape = (
   return scaleDiverging<string>(squeezedPRGn(2.5)).domain([min, mean, max]);
 };
 
+export const ColorScalerShapeMedian = (
+  //for Volume and Surface
+  range: [number, number, number, number]
+): ScaleDiverging<string, never> => {
+  const [min, max, mean, median] = range;
+  return scaleDiverging<string>(squeezedPRGn(2.5)).domain([min, median, max]);
+};
 
 export const PowerColorScaler = (range: [number, number]): ScaleSequential<string, never> => {
   const power = scalePow().exponent(0.4).domain(range).range([0, 1]).clamp(true);

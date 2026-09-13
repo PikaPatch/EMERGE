@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle }
 import { Loader } from "lucide-react";
 import * as d3 from "d3";
 import { FateColor } from "@/config/FateColor";
-import { expCol, expCol2, shapeCol, getLineageColor } from "@/components/utils/LineageTreeFunctions";
+import { expCol, expCol2, shapeCol,VolCol, getLineageColor } from "@/components/utils/LineageTreeFunctions";
 import { LineageSetting } from "@/components/utils/usefulobject";
 import { API_BASE } from "@/components/utils/API_BASE";
 
@@ -473,7 +473,10 @@ export const Best_Lineage = forwardRef<{ resetZoom: () => void }, AllSubLineageP
           case "expression": return ExpColorMode === 1
             ? expCol(key, tp, ColorData)
             : expCol2(key, tp, ColorData);
-          case "shape": return shapeCol(key, tp, ColorData["Range"], ColorData);
+          case "shape":
+            return Fac && ['Volume', 'Surface'].includes(Fac)
+              ? VolCol(key, tp, ColorData["Range"], ColorData)
+              : shapeCol(key, tp, ColorData["Range"], ColorData);
           default: return getLineageColor(key);
         }
       };

@@ -513,6 +513,8 @@ export const ControlPanel = ({
                       <SelectValue placeholder="Select a feature" />
                     </SelectTrigger>
                     <SelectContent className="max-h-60 overflow-y-auto">
+                      <SelectItem key="Volume" value="Volume">Volume</SelectItem>
+                      <SelectItem key="Surface" value="Surface">Surface area</SelectItem>
                       {Object.entries(Shapefac).map(([f, fname]) => (
                         <SelectItem key={f} value={f}>{fname}</SelectItem>
                       ))}

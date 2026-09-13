@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 const highlights = [
-  { value: "37",        unit: "Embryo sample",         icon: FlaskConical, desc: "Natural\nNatural (fast imaging)\nMechanically-compressed\nNotch-signaling-blocked\nWnt-signaling-blocked\nCell-division-delayed" },
+  { value: "37",        unit: "Embryo sample",         icon: FlaskConical, desc: "Natural\nNatural (fast imaging)\nMechanically-compressed\nNotch-signaling-blocked\nWnt-signaling-blocked\nCell-division-accelerated" },
   { value: "944,302",  unit: "Cell model",      icon: Box,       desc: "Segmented 3D cell object" },
   { value: "12",  unit: "Morphology features",      icon: Layers,       desc: "Geometrically interpretable" },
   { value: "~20,000", unit: "Gene expression",  icon: Dna,          desc: "Fluorescence labeling\nRNA sequencing" },

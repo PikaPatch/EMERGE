@@ -328,6 +328,16 @@ const handleDownloadSVG = async () => {
             <div className="space-y-2 border-t pt-3">
               <Label className="text-xs font-semibold">Select a feature</Label>
               <div className="grid grid-cols-1 gap-1.5">
+                <Button
+                    key="Volume"
+                    variant={Fac === "Volume" ? "default" : "outline"}
+                    onClick={() => setFac("Volume")}
+                    className="text-xs font-medium h-7 px-2"
+                    size="sm"
+                    title="Volume"
+                  >
+                    Volume
+                  </Button>
                 {Object.keys(Shapefac).map((metric) => (
                   <Button
                     key={metric}
