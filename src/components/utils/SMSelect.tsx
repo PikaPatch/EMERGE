@@ -8,7 +8,7 @@ import {
   SelectSeparator,
   SelectValue,
 } from "@/components/ui/select";
-import { SMList } from "@/components/utils/usefulobject";
+import { SMList, SMGroupName } from "@/components/utils/usefulobject";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -17,6 +17,13 @@ interface Props {
   // SMType: "CMap8" | "CShaper17" | "EmbSAM4567" | "EmbSAM89" | "MT_lag1" | "MT_pop1" | "MT_wee" ;
   // setSMType: (value: "CMap8" | "CShaper17" | "EmbSAM4567" | "EmbSAM89" | "MT_lag1" | "MT_pop1" | "MT_wee") => void;
   setEmpty?: (value:string) => void;
+}
+
+function getConditionLabel(sm: string): string {
+  const key = (Object.keys(SMList) as (keyof typeof SMList)[]).find((k) =>
+    SMList[k].includes(sm)
+  );
+  return key ? SMGroupName[key] : "";
 }
 
 export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
@@ -46,6 +53,8 @@ export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
     setEmpty?.(newValue)
   };
 
+  const conditionLabel = getConditionLabel(SM);
+
   const triggerTheme = 
   SMList.Natural.includes(SM) ? "border-sky-400/60 hover:border-sky-400/90 text-sky-600 bg-sky-500/5 hover:bg-sky-500/10 focus:ring-sky-400/50" 
   : SMList.NaturalF.includes(SM) ? "border-violet-400/60 hover:border-violet-400/90 text-violet-600 bg-violet-500/5 hover:bg-violet-500/10 focus:ring-violet-400/50" 
@@ -62,12 +71,18 @@ export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
         <Select value={SM} onValueChange={handleValueChange}>
           <SelectTrigger
             className={cn(
-              "w-52 border transition-all shadow-sm",
+              "w-72 h-auto min-h-10 border transition-all shadow-sm py-1.5 [&>span]:line-clamp-none",
               triggerTheme
             )}
           >
-            {/* Single source of truth: no manual dot here */}
-            <SelectValue placeholder="Select embryo sample" />
+            <SelectValue placeholder="Select embryo sample">
+              <span className="flex flex-col items-start gap-0.5 text-left leading-tight">
+                <span className="text-[11px] font-medium opacity-70 truncate max-w-[15rem]">
+                  {conditionLabel}
+                </span>
+                <span className="text-sm font-medium">{SM}</span>
+              </span>
+            </SelectValue>
           </SelectTrigger>
 
           <SelectContent className="min-w-[220px] max-h-[320px] p-1">

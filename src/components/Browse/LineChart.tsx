@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { TimeResolutionS,FourCellList } from '@/components/utils/usefulobject'
+import { Checkbox } from "@/components/ui/checkbox";
 
 const COLOR_PALETTE = [
   "#8884d8", "#82ca9d", "#ffc658", "#ff7c7c", "#ff7f50",
@@ -40,8 +41,10 @@ export const CellDataChart: React.FC<CellDataChartProps> = ({
   height = 400,
 }) => {
   const [LineData, setLineData] = useState<LineDataType | null>(null);
+  const [monotone, setMonotone] = useState(false);
   const YAxisTitle = DataName === 'Volume' ? `Volume (µm³)` : `Surface area (µm²)`;
   const line_width = 2;
+  const lineType = monotone ? "monotone" : "linear";
 
   useEffect(() => {
     if (!CellName) {
@@ -108,6 +111,20 @@ const ChartData = useMemo(() => {
   return (
     <>
       {ChartData.length > 0 ? (
+        <div className="w-full">
+          <div className="flex justify-end mb-1">
+            <label
+              htmlFor={`monotone-${DataName}`}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none"
+            >
+              <Checkbox
+                id={`monotone-${DataName}`}
+                checked={monotone}
+                onCheckedChange={(checked) => setMonotone(checked === true)}
+              />
+              Smooth
+            </label>
+          </div>
         <ResponsiveContainer width="100%" height={height}>
           <LineChart data={ChartData} margin={{ top: 10, right: 30, left: 20, bottom: 30 }}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -147,7 +164,7 @@ const ChartData = useMemo(() => {
             {LineList.map((sampleKey, idx) => (
               <Line
                 key={sampleKey}
-                type="monotone"
+                type={lineType}
                 dataKey={sampleKey}
                 stroke={COLOR_PALETTE[idx % COLOR_PALETTE.length]}
                 dot={false}
@@ -157,6 +174,7 @@ const ChartData = useMemo(() => {
             ))}
           </LineChart>
         </ResponsiveContainer>
+        </div>
       ) : (
         <div className="w-full h-64 flex items-center justify-center bg-muted/50 rounded-lg border border-dashed">
           <p className="text-muted-foreground">

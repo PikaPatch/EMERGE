@@ -10,8 +10,8 @@ export const SMList = {
 export const SMGroupName = {
   Natural : 'Natural',
   NaturalF : 'Natural (fast imaging)',
-  Compress : 'Mechanically compressed',
-  CompressF : 'Mechanically compressed (fast imaging)',
+  Compress : 'Mechanically-compressed',
+  CompressF : 'Mechanically-compressed (fast imaging)',
   MT_lag1 : 'Notch-signaling-blocked',
   MT_pop1 : 'Wnt-signaling-blocked',
   MT_wee : 'Cell-division-accelerated',

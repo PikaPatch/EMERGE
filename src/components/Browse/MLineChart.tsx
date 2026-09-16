@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Shapefac,TimeResolutionS,FourCellList } from "@/components/utils/usefulobject";
 import { API_BASE } from "@/components/utils/API_BASE";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   LineChart,
   Line,
@@ -19,6 +20,9 @@ const COLOR_PALETTE = [
   "#adff2f", "#da70d6", "#f08080", "#90ee90", "#87ceeb",
 ];
 
+const REFERENCE_KEY = "Reference";
+const REFERENCE_LABEL = "Mean";
+
 interface MLineChartProps {
   CellName?: string;
   MLineList: string[];
@@ -30,8 +34,38 @@ type LineDataType = {
   [sampleName: string]: number[];
 };
 
-type NormalizedPosition = { normIndex: number; val: number };
-type NormalizedEntry = [string, NormalizedPosition[]];
+type SeriesPoint = { x: number; y: number };
+
+function lerp(x0: number, y0: number, x1: number, y1: number, x: number): number {
+  if (x1 === x0) return y0;
+  return y0 + ((y1 - y0) * (x - x0)) / (x1 - x0);
+}
+
+/** Linear interpolate y at x from sorted points; null if outside span. */
+function interpAt(points: SeriesPoint[], x: number): number | null {
+  if (points.length === 0) return null;
+  if (x < points[0].x || x > points[points.length - 1].x) return null;
+  for (let i = 0; i < points.length; i++) {
+    if (Math.abs(points[i].x - x) < 1e-9) return points[i].y;
+    if (points[i].x > x) {
+      const a = points[i - 1];
+      const b = points[i];
+      return lerp(a.x, a.y, b.x, b.y, x);
+    }
+  }
+  return null;
+}
+
+function seriesFromSample(sample: string, arr: number[]): SeriesPoint[] {
+  const resolution = TimeResolutionS[sample as keyof typeof TimeResolutionS] ?? 1;
+  const points: SeriesPoint[] = [];
+  arr.forEach((val, i) => {
+    if (typeof val === "number" && Number.isFinite(val)) {
+      points.push({ x: (i * resolution) / 60, y: val });
+    }
+  });
+  return points;
+}
 
 export const MLineChart: React.FC<MLineChartProps> = ({
   CellName,
@@ -40,8 +74,10 @@ export const MLineChart: React.FC<MLineChartProps> = ({
   height = 400,
 }) => {
   const [LineData, setLineData] = useState<LineDataType | null>(null);
+  const [monotone, setMonotone] = useState(false);
   const YAxisTitle = Shapefac[DataName];
   const line_width = 2;
+  const lineType = monotone ? "monotone" : "linear";
 
   useEffect(() => {
     if (!CellName) {
@@ -50,7 +86,7 @@ export const MLineChart: React.FC<MLineChartProps> = ({
     }
     const fetchData = async () => {
       try {
-        const url = `${API_BASE}/Shape/Line?&CellName=${CellName}&DataName=${DataName}`;
+        const url = `${API_BASE}/Shape/Line?CellName=${CellName}&DataName=${DataName}`;
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -64,252 +100,172 @@ export const MLineChart: React.FC<MLineChartProps> = ({
     fetchData();
   }, [CellName, DataName]);
 
-  // const ChartData = useMemo(() => {
-
-  //   if (!LineData) return [];
-
-  //   const filteredData = Object.fromEntries(
-  //     Object.entries(LineData).filter(([key]) => MLineList.includes(key))
-  //   );
-
-  //   const values = Object.values(filteredData);
-  //   if (values.length === 0) return [];
-
-  //   const maxLength = Math.max(...values.map((arr) => arr.length));
-  //   if (maxLength === 0) return [];
-
-  //   const normalizedEntries: NormalizedEntry[] = Object.entries(filteredData).map(([key, arr]) => {
-  //     const len = arr.length;
-  //     if (len === 0) return [key, []] as NormalizedEntry;
-
-  //     const normalizedPositions: NormalizedPosition[] = arr.map((val, i) => {
-  //       const normIndex = len === 1 ? 1 : 1 + (i / (len - 1)) * (maxLength - 1);
-  //       return { normIndex, val };
-  //     });
-
-  //     return [key, normalizedPositions] as NormalizedEntry;
-  //   });
-
-  //   const CData = Array.from({ length: maxLength }, (_, i) => {
-  //     const index = i + 1;
-  //     const row: Record<string, number | null> = { index };
-
-  //     for (const [key, positions] of normalizedEntries) {
-  //       if (positions.length === 0) {
-  //         row[key] = null;
-  //         continue;
-  //       }
-
-  //       let value: number | null = null;
-  //       let left: NormalizedPosition | null = null;
-  //       let right: NormalizedPosition | null = null;
-
-  //       for (let j = 0; j < positions.length; j++) {
-  //         const p = positions[j];
-  //         if (Math.abs(p.normIndex - index) < 1e-9) {
-  //           value = p.val;
-  //           left = null;
-  //           right = null;
-  //           break;
-  //         }
-  //         if (p.normIndex < index) {
-  //           if (left === null || p.normIndex > left.normIndex) left = p;
-  //         } else {
-  //           if (right === null || p.normIndex < right.normIndex) right = p;
-  //         }
-  //       }
-
-  //       if (value === null && left && right) {
-  //         const t = (index - left.normIndex) / (right.normIndex - left.normIndex);
-  //         value = left.val + t * (right.val - left.val);
-  //       } else if (value === null && left) {
-  //         value = left.val;
-  //       } else if (value === null && right) {
-  //         value = right.val;
-  //       }
-
-  //       row[key] = value;
-  //     }
-
-  //     return row;
-  //   });
-
-  //   return CData;
-  // }, [LineData, MLineList]);
-
   const ChartData = useMemo(() => {
     if (!LineData) return [];
 
     const filteredData = Object.fromEntries(
-      Object.entries(LineData).filter(([key]) => MLineList.includes(key))
-    );
+      Object.entries(LineData).filter(
+        ([key, val]) => MLineList.includes(key) && Array.isArray(val) && val.length > 0
+      )
+    ) as Record<string, number[]>;
 
     if (Object.values(filteredData).length === 0) return [];
+
+    // Time series for currently selected samples only
+    const selectedSeries = Object.entries(filteredData).map(
+      ([sample, arr]) => seriesFromSample(sample, arr)
+    );
 
     const timeMap = new Map<number, Record<string, number>>();
 
     for (const [key, arr] of Object.entries(filteredData)) {
       const resolution = TimeResolutionS[key as keyof typeof TimeResolutionS] ?? 1;
-      const maxTime = (arr.length - 1) * resolution;
 
       arr.forEach((val, i) => {
-        //const time = FourCellList.includes(CellName) ? ((i * resolution - maxTime) / 60) : (i * resolution / 60);
-        const time = (i * resolution / 60);
+        const time = (i * resolution) / 60;
         if (!timeMap.has(time)) timeMap.set(time, { time });
         timeMap.get(time)![key] = val;
       });
     }
 
-    return Array.from(timeMap.values()).sort((a, b) => (a.time as number) - (b.time as number));
+    // Mean of selected samples at each plotted timepoint (interpolate missing ones).
+    // Guarantees the mean sits between min/max of contributing selected samples.
+    for (const row of timeMap.values()) {
+      const t = row.time as number;
+      const vals: number[] = [];
+      for (const points of selectedSeries) {
+        const v = interpAt(points, t);
+        if (v != null && Number.isFinite(v)) vals.push(v);
+      }
+      if (vals.length > 0) {
+        row[REFERENCE_KEY] = vals.reduce((s, v) => s + v, 0) / vals.length;
+      }
+    }
+
+    return Array.from(timeMap.values()).sort(
+      (a, b) => (a.time as number) - (b.time as number)
+    );
   }, [LineData, MLineList]);
 
-  const YRange = useMemo<[number, number] | ['auto', 'auto']>(() => {
-    if (!LineData) return ['auto', 'auto'];
+  const hasReference = useMemo(
+    () => ChartData.some((row) => typeof row[REFERENCE_KEY] === "number"),
+    [ChartData]
+  );
+
+  const YRange = useMemo<[number, number] | ["auto", "auto"]>(() => {
+    if (!LineData) return ["auto", "auto"];
 
     const filteredData = Object.fromEntries(
-      Object.entries(LineData).filter(([key]) => MLineList.includes(key))
-    );
+      Object.entries(LineData).filter(
+        ([key, val]) => MLineList.includes(key) && Array.isArray(val)
+      )
+    ) as Record<string, number[]>;
 
-    const allValues = Object.values(filteredData).flat();
-    if (allValues.length === 0) return ['auto', 'auto'];
+    const allValues = Object.values(filteredData)
+      .flat()
+      .filter((v) => typeof v === "number" && Number.isFinite(v));
+
+    if (allValues.length === 0) return ["auto", "auto"];
 
     const min = Math.min(...allValues);
     const max = Math.max(...allValues);
-    const padding = (max - min) * 0.1;
+    const padding = (max - min) * 0.1 || 0.05;
 
     return [min - padding, max + padding];
   }, [LineData, MLineList]);
 
-  // const YRange = useMemo<[number, number] | ['auto', 'auto']>(() => {
-  //   if (!LineData) return ['auto', 'auto'];
-
-  //   const filteredData = Object.fromEntries(
-  //     Object.entries(LineData).filter(([key]) => MLineList.includes(key))
-  //   );
-
-  //   const allValues = Object.values(filteredData).flat();
-  //   if (allValues.length === 0) return ['auto', 'auto'];
-
-  //   return [Math.min(...allValues) , Math.max(...allValues)];
-  // }, [LineData, MLineList]);
-
-
-//   const ChartData = useMemo(() => {
-//   if (!LineData) return [];
-
-//   const filteredData = Object.fromEntries(
-//     Object.entries(LineData).filter(([key]) => MLineList.includes(key))
-//   );
-
-//   const samples = Object.keys(filteredData);
-//   if (samples.length === 0) return [];
-
-//   // Pre-compute once
-//   const lengths = samples.map((s) => filteredData[s].length);
-//   const maxLen = Math.max(...lengths);
-//   const offsets = lengths.map((len) => maxLen - len); // left-padding per sample
-
-//   // Pre-allocate to avoid dynamic array resizing
-//   const result = new Array(maxLen);
-
-//   for (let i = 0; i < maxLen; i++) {
-//     const entry: Record<string, number | null> = { index: i + 1 };
-//     for (let j = 0; j < samples.length; j++) {
-//       const dataIdx = i - offsets[j];
-//       entry[samples[j]] = dataIdx >= 0 ? filteredData[samples[j]][dataIdx] : null;
-//     }
-//     result[i] = entry;
-//   }
-
-//   return result;
-// }, [LineData, MLineList]);
-
-return (
-  <>
-    {ChartData.length > 0 ? (
-      <ResponsiveContainer width="100%" height={height}>
-        <LineChart data={ChartData} margin={{ top: 10, right: 30, left: 20, bottom: 50 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey="time"
-            type="number"
-            domain={['dataMin', 'dataMax']}
-            tickFormatter={(v) => `${v.toFixed(0)}`}
-            label={{ value: FourCellList.includes(CellName) ? 'Time after division (min)' : 'Time after division (min)', position: 'insideBottom', offset: -15 }}
-          />
-          <YAxis
+  return (
+    <>
+      {ChartData.length > 0 ? (
+        <div className="w-full">
+          <div className="flex justify-end mb-1">
+            <label
+              htmlFor="monotone-shape"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none"
+            >
+              <Checkbox
+                id="monotone-shape"
+                checked={monotone}
+                onCheckedChange={(checked) => setMonotone(checked === true)}
+              />
+              Smooth
+            </label>
+          </div>
+        <ResponsiveContainer width="100%" height={height}>
+          <LineChart data={ChartData} margin={{ top: 10, right: 30, left: 20, bottom: 50 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="time"
+              type="number"
+              domain={["dataMin", "dataMax"]}
+              tickFormatter={(v) => `${v.toFixed(0)}`}
+              label={{
+                value: FourCellList.includes(CellName)
+                  ? "Time after division (min)"
+                  : "Time after division (min)",
+                position: "insideBottom",
+                offset: -15,
+              }}
+            />
+            <YAxis
               domain={YRange}
               tickFormatter={(v) => v.toFixed(2)}
               label={{
                 value: YAxisTitle,
                 angle: -90,
-                position: 'insideLeft',
+                position: "insideLeft",
                 offset: -0,
-                style: { textAnchor: 'middle' },
+                style: { textAnchor: "middle" },
               }}
             />
-          <Tooltip
-            labelFormatter={(label) => (
-              <span style={{ color: '#ffc658', fontWeight: 'bold' }}>
-                {`Time: ${(label as number).toFixed(1)} min`}
-              </span>
-            )}
-            formatter={(value, name) => [
-              (value as number).toFixed(2),
-              name
-            ]}
-          />
-          <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ paddingLeft: 20 }}/>
-          {MLineList.map((sampleKey, idx) => (
-            <Line
-              key={sampleKey}
-              type="monotone"
-              dataKey={sampleKey}
-              stroke={COLOR_PALETTE[idx % COLOR_PALETTE.length]}
-              dot={false}
-              strokeWidth={line_width}
-              connectNulls={true}
+            <Tooltip
+              labelFormatter={(label) => (
+                <span style={{ color: "#ffc658", fontWeight: "bold" }}>
+                  {`Time: ${(label as number).toFixed(1)} min`}
+                </span>
+              )}
+              formatter={(value, name) => [
+                (value as number).toFixed(2),
+                name === REFERENCE_KEY ? REFERENCE_LABEL : name,
+              ]}
             />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
-    ) : null}
-  </>
-);
-
-  // return (
-  //   <>
-  //     {ChartData.length > 0 ? (
-  //       <ResponsiveContainer width="100%" height={height}>
-  //         <LineChart data={ChartData}>
-  //           <CartesianGrid strokeDasharray="3 3" />
-  //           <XAxis dataKey="index" />
-  //           <YAxis
-  //             domain={YRange}
-  //             label={{
-  //               value: YAxisTitle,
-  //               angle: -90,
-  //               position: 'insideLeft',
-  //               style: { textAnchor: 'middle' },
-  //             }}
-  //             tickFormatter={(value: number | null) => (value !== null ? value.toFixed(2) : 'N/A')}
-  //           />
-  //           <Tooltip formatter={(value: number | null) => (value !== null ? value.toFixed(2) : 'N/A')} />
-  //           <Legend />
-  //           {MLineList.map((sampleKey, idx) => (
-  //             <Line
-  //               key={sampleKey}
-  //               type="monotone"
-  //               dataKey={sampleKey}
-  //               stroke={COLOR_PALETTE[idx % COLOR_PALETTE.length]}
-  //               strokeWidth={line_width}
-  //               dot={false}
-  //               connectNulls={false}
-  //             />
-  //           ))}
-  //         </LineChart>
-  //       </ResponsiveContainer>
-  //     ) : null}
-  //   </>
-  // );
+            <Legend
+              layout="vertical"
+              verticalAlign="middle"
+              align="right"
+              wrapperStyle={{ paddingLeft: 20 }}
+              formatter={(value) =>
+                value === REFERENCE_KEY ? REFERENCE_LABEL : value
+              }
+            />
+            {MLineList.map((sampleKey, idx) => (
+              <Line
+                key={sampleKey}
+                type={lineType}
+                dataKey={sampleKey}
+                stroke={COLOR_PALETTE[idx % COLOR_PALETTE.length]}
+                dot={false}
+                strokeWidth={line_width}
+                connectNulls={true}
+              />
+            ))}
+            {hasReference && (
+              <Line
+                type={lineType}
+                dataKey={REFERENCE_KEY}
+                name={REFERENCE_KEY}
+                stroke="#64748b"
+                strokeDasharray="6 4"
+                strokeWidth={2}
+                dot={false}
+                connectNulls
+                legendType="plainline"
+              />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+        </div>
+      ) : null}
+    </>
+  );
 };

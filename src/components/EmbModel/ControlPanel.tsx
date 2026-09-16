@@ -18,6 +18,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectSeparator,
 } from "@/components/ui/select";
 import {
   Aperture,
@@ -515,6 +516,7 @@ export const ControlPanel = ({
                     <SelectContent className="max-h-60 overflow-y-auto">
                       <SelectItem key="Volume" value="Volume">Volume</SelectItem>
                       <SelectItem key="Surface" value="Surface">Surface area</SelectItem>
+                      <SelectSeparator />
                       {Object.entries(Shapefac).map(([f, fname]) => (
                         <SelectItem key={f} value={f}>{fname}</SelectItem>
                       ))}
