@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronsUpDown, X } from "lucide-react";
 import { API_BASE } from "@/components/utils/API_BASE";
-import { ColorScaler } from "@/components/utils/ColorScaler";
 import { FourCellList, SMGroupName, SMList, TimeResolutionS } from "@/components/utils/usefulobject";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -126,8 +125,7 @@ export const ContactAreaChart: React.FC<ContactAreaChartProps> = ({
 }) => {
   const [payload, setPayload] = useState<ContactAreaResponse | null>(null);
   const [sample, setSample] = useState(defaultSample);
-  const [view, setView] = useState("heatmap");
-  const [hover, setHover] = useState<{ cell: string; TP: number; area: number | null } | null>(null);
+  const [view, setView] = useState("area");
   const [lineList, setLineList] = useState<string[]>(LineList ?? MLineList ?? []);
   const [partnerCell, setPartnerCell] = useState<string>("");
   const [monotone, setMonotone] = useState(false);
@@ -186,22 +184,6 @@ export const ContactAreaChart: React.FC<ContactAreaChartProps> = ({
         (a, b) => partnerTotal(rows, b) - partnerTotal(rows, a)
       ),
     [rawPartners, rows]
-  );
-
-  const maxArea = useMemo(() => {
-    let max = 0;
-    for (const row of rows) {
-      for (const partner of partners) {
-        const value = row[partner];
-        if (isFiniteNumber(value) && value > max) max = value;
-      }
-    }
-    return max;
-  }, [partners, rows]);
-
-  const colorScale = useMemo(
-    () => ColorScaler([0, maxArea || 1]),
-    [maxArea]
   );
 
   const areaData = useMemo(
@@ -269,12 +251,6 @@ export const ContactAreaChart: React.FC<ContactAreaChartProps> = ({
   }, [lineList, partnerCell, payload]);
 
   const tps = rows.map((row) => row.TP);
-  const tickStep = Math.max(1, Math.ceil(tps.length / 12));
-  const cellW = tps.length > 48 ? 12 : tps.length > 24 ? 16 : 22;
-  const cellH = 20;
-  const labelW = 72;
-  const heatWidth = labelW + tps.length * cellW + 8;
-  const heatHeight = 28 + partners.length * cellH + 24;
 
   const hasData = partners.length > 0 && rows.length > 0;
   const lineType = monotone ? "monotone" : "linear";
@@ -347,115 +323,9 @@ export const ContactAreaChart: React.FC<ContactAreaChartProps> = ({
       ) : (
         <Tabs value={view} onValueChange={setView}>
           <TabsList className="mb-3">
-            <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
             <TabsTrigger value="area">Stacked area</TabsTrigger>
             <TabsTrigger value="line">Line chart</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="heatmap">
-            {!hasData ? (
-              <div className="w-full h-64 flex items-center justify-center bg-muted/50 rounded-lg border border-dashed">
-                <p className="text-muted-foreground">
-                  No contact-area data for {CellName} in {sample}
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
-                  <span>0</span>
-                  <div
-                    className="h-2.5 w-36 rounded-sm border border-border"
-                    style={{
-                      background: `linear-gradient(to right, ${[0, 0.25, 0.5, 0.75, 1]
-                        .map((t) => colorScale(t * (maxArea || 1)))
-                        .join(", ")})`,
-                    }}
-                  />
-                  <span>{maxArea.toFixed(1)} µm²</span>
-                  <span className="ml-2">Grey = no contact</span>
-                </div>
-
-                <div className="relative">
-                  {hover && hover.area != null && hover.area !== 0 && (
-                    <div className="absolute z-10 pointer-events-none -top-1 right-0 rounded-md border bg-background px-2 py-1 text-xs shadow-sm">
-                      <span className="font-medium">{hover.cell}</span>
-                      {" · "}TP {hover.TP}
-                      {" · "}
-                      {hover.area.toFixed(2)} µm²
-                    </div>
-                  )}
-
-                  <ScrollArea className="w-full">
-                    <svg
-                      width={heatWidth}
-                      height={heatHeight}
-                      className="text-foreground"
-                    >
-                      {tps.map((tp, i) =>
-                        i % tickStep === 0 || i === tps.length - 1 ? (
-                          <text
-                            key={`tp-${tp}`}
-                            x={labelW + i * cellW + cellW / 2}
-                            y={18}
-                            textAnchor="middle"
-                            fontSize={9}
-                            className="fill-muted-foreground"
-                          >
-                            {tp}
-                          </text>
-                        ) : null
-                      )}
-                      {partners.map((cell, j) => (
-                        <g key={cell}>
-                          <text
-                            x={labelW - 6}
-                            y={28 + j * cellH + cellH / 2}
-                            textAnchor="end"
-                            dominantBaseline="middle"
-                            fontSize={10}
-                            className="fill-current"
-                            style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
-                          >
-                            {cell}
-                          </text>
-                          {rows.map((row, i) => {
-                            const value = row[cell];
-                            const filled = isFiniteNumber(value);
-                            return (
-                              <rect
-                                key={`${cell}-${row.TP}`}
-                                x={labelW + i * cellW + 1}
-                                y={28 + j * cellH + 1}
-                                width={cellW - 2}
-                                height={cellH - 2}
-                                rx={2}
-                                fill={filled ? colorScale(value) : "hsl(var(--muted))"}
-                                opacity={filled ? 1 : 0.45}
-                                onMouseEnter={() =>
-                                  setHover({ cell, TP: row.TP, area: filled ? value : null })
-                                }
-                                onMouseLeave={() => setHover(null)}
-                              />
-                            );
-                          })}
-                        </g>
-                      ))}
-                      <text
-                        x={labelW + (tps.length * cellW) / 2}
-                        y={heatHeight - 4}
-                        textAnchor="middle"
-                        fontSize={11}
-                        className="fill-muted-foreground"
-                      >
-                        Time point
-                      </text>
-                    </svg>
-                    <ScrollBar orientation="horizontal" />
-                  </ScrollArea>
-                </div>
-              </>
-            )}
-          </TabsContent>
 
           <TabsContent value="area">
             {!hasData ? (
