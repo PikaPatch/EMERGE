@@ -105,11 +105,8 @@ const { DataList, YaxisList, XaxisList, expRange } = useMemo(() => {
   };
 }, [HeatMapData]);
 
-  const colorScale = useMemo(() => ColorScaler(expRange), [expRange]);
-  const noDataColor = "hsl(var(--muted))";
-  const tickStep = Math.max(1, Math.ceil(XaxisList.length / 12));
 
-  // D3 Heatmap rendering — visual style aligned with ContactAreaChart heatmap
+  // D3 Heatmap rendering
   useEffect(() => {
     if (!HeatMapData){return}
     if (!svgRef.current || YaxisList.length === 0 || XaxisList.length === 0) return;
@@ -117,76 +114,86 @@ const { DataList, YaxisList, XaxisList, expRange } = useMemo(() => {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    const margin = { top: 28, right: 16, bottom: 28, left: 72 };
-    const cellWidth = XaxisList.length > 48 ? 12 : XaxisList.length > 24 ? 16 : 22;
-    const cellHeight = 20;
-    const gap = 1;
+    const margin = { top: 30, right: 80, bottom: 60, left: 140 };
+    const cellWidth = 20;
+    const cellHeight = cellWidth;
     const width = XaxisList.length * cellWidth + margin.left + margin.right;
     const height = YaxisList.length * cellHeight + margin.top + margin.bottom;
 
-    svg.attr("width", width).attr("height", height).attr("class", "text-foreground");
+    svg.attr("width", width).attr("height", height);
 
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // X scale (TP) — full cell slots; gaps drawn via rect inset
+    // Color scale using ColorScaler
+    const colorScale = ColorScaler(expRange);
+    const noDataColor = "#9ca3af"; // gray-400 for Exp = -1
+
+    // X scale (TP)
     const xScale = d3
       .scaleBand<number>()
       .domain(XaxisList)
       .range([0, XaxisList.length * cellWidth])
-      .padding(0);
+      .padding(0.05);
 
     // Y scale (CellName)
     const yScale = d3
       .scaleBand<string>()
       .domain(YaxisList)
       .range([0, YaxisList.length * cellHeight])
-      .padding(0);
+      .padding(0.05);
+    
 
-    // TP labels (top) — ContactAreaChart style
-    XaxisList.forEach((tp, i) => {
-      if (i % tickStep !== 0 && i !== XaxisList.length - 1) return;
-      g.append("text")
-        .attr("x", (xScale(tp) ?? 0) + cellWidth / 2)
-        .attr("y", -8)
-        .attr("text-anchor", "middle")
-        .attr("font-size", 9)
-        .attr("class", "fill-muted-foreground")
-        .text(`${tp}`);
-    });
+    // X axis (TP)
+    g.append("g")
+      .attr("transform", `translate(0,${YaxisList.length * cellHeight})`)
+      .call(d3.axisBottom(xScale).tickFormat(d => `${d}`))
+      .selectAll("text")
+      .attr("fill", "currentColor")
+      .style("font-size", "9px")
+      .attr("transform", "rotate(-45)")
+      .attr("text-anchor", "end");
 
-    // Cell name labels (left) — monospace like ContactAreaChart
-    YaxisList.forEach((cell) => {
-      const isFocus = cell === CellName;
-      const isContact = ConCells?.includes(cell);
-      g.append("text")
-        .attr("x", -6)
-        .attr("y", (yScale(cell) ?? 0) + cellHeight / 2)
-        .attr("text-anchor", "end")
-        .attr("dominant-baseline", "middle")
-        .attr("font-size", 10)
-        .attr("fill", isFocus ? "#ef4444" : isContact ? "#eab308" : "currentColor")
-        .style("font-family", "ui-monospace, SFMono-Regular, Menlo, monospace")
-        .text(cell);
-    });
+    g.selectAll(".domain, .tick line").attr("stroke", "currentColor");
 
-    // Bottom axis title
+    // X axis label
     g.append("text")
-      .attr("x", (XaxisList.length * cellWidth) / 2)
-      .attr("y", YaxisList.length * cellHeight + 18)
+      .attr("x", (XaxisList.length * cellWidth))
+      .attr("y", YaxisList.length * cellHeight + 50)
       .attr("text-anchor", "middle")
-      .attr("font-size", 11)
-      .attr("class", "fill-muted-foreground")
-      .text("Time point");
+      .attr("fill", "currentColor")
+      .style("font-size", "12px")
+      .style("font-weight", "500")
+      .text("TP");
 
+    // Y axis (CellName)
+    g.append("g")
+      .call(d3.axisLeft(yScale))
+      .selectAll("text")
+      .attr("fill", (d) => d === CellName ? "#ef4444" : ConCells.includes(d) ? "yellow" : "currentColor")
+      .style("font-size", "8px");
+
+    // Y axis label
+    g.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -(YaxisList.length * cellHeight) / 2)
+      .attr("y", -margin.left + 15)
+      .attr("text-anchor", "middle")
+      .attr("fill", "currentColor")
+      .style("font-size", "12px")
+      .style("font-weight", "500")
+      .text("Cell Name");
+
+    // Tooltip
     const tooltip = d3.select(tooltipRef.current);
 
-    // Heatmap cells with ContactAreaChart-like tile padding + rounded corners
+    // Heatmap cells
     DataList.forEach(Cell => {
         const tp = Cell.TP
         const exp = Cell.Exp;
         const aest = Cell.Aest
         const pest = Cell.Pest
         
+        // Skip if no data
         if (exp === undefined) return;
 
         let fillColor: string;
@@ -195,23 +202,23 @@ const { DataList, YaxisList, XaxisList, expRange } = useMemo(() => {
         } else {
           fillColor = colorScale(exp);
         }
-        const x0 = xScale(tp) ?? 0;
-        const y0 = yScale(aest) ?? 0;
-        const y1 = (yScale(pest) ?? 0) + cellHeight;
-        const w = Math.max(0, cellWidth - gap * 2);
-        const h = Math.max(0, y1 - y0 - gap * 2);
+        let x = xScale(tp)
+        let y = yScale(aest)
+        let width = xScale.bandwidth()
+        let height = yScale(pest) - y + yScale.bandwidth()
 
         g.append("rect")
-          .attr("x", x0 + gap)
-          .attr("y", y0 + gap)
-          .attr("width", w)
-          .attr("height", h)
-          .attr("rx", 2)
+          .attr("x", x || 0)
+          .attr("y", y || 0)
+          .attr("width", width)
+          .attr("height", height)
           .attr("fill", fillColor)
-          .attr("opacity", exp === -1 ? 0.45 : 1)
+          .attr("stroke", "hsl(var(--border))")
+          //.attr("stroke", (d) => d === CellName ? "#ef4444" : "currentColor")
+          .attr("stroke-width", 0.5)
           .style("cursor", "pointer")
           .on("mouseover", function (event) {
-            d3.select(this).attr("stroke", "hsl(var(--primary))").attr("stroke-width", 1.5);
+            d3.select(this).attr("stroke-width", 2).attr("stroke", "hsl(var(--primary))");
             tooltip
               .style("opacity", 1)
               .style("left", `${event.offsetX + 10}px`)
@@ -223,36 +230,80 @@ const { DataList, YaxisList, XaxisList, expRange } = useMemo(() => {
               );
           })
           .on("mouseout", function () {
-            d3.select(this).attr("stroke", "none").attr("stroke-width", 0);
+            d3.select(this).attr("stroke-width", 0.5).attr("stroke", "hsl(var(--border))");
             tooltip.style("opacity", 0);
           });
+      //});
     });
 
-  }, [YaxisList, XaxisList, HeatMapData, expRange, colorScale, CellName, ConCells, tickStep]);
+    // Color legend
+    const legendWidth = 15;
+    const legendHeight = Math.min(YaxisList.length * cellHeight, 150);
+    const legendX = XaxisList.length * cellWidth + 20;
+
+    const legendScale = d3.scaleLinear().domain(expRange).range([legendHeight, 0]);
+    const legendAxis = d3.axisRight(legendScale).ticks(5).tickFormat((d) => (d as number).toFixed(4));
+
+    // Legend gradient
+    const defs = svg.append("defs");
+    const gradient = defs
+      .append("linearGradient")
+      .attr("id", "exp-legend-gradient")
+      .attr("x1", "0%")
+      .attr("y1", "100%")
+      .attr("x2", "0%")
+      .attr("y2", "0%");
+
+    // Use ColorScaler colors (interpolateReds)
+    const numStops = 10;
+    for (let i = 0; i <= numStops; i++) {
+      const t = i / numStops;
+      const value = expRange[0] + t * (expRange[1] - expRange[0]);
+      gradient.append("stop")
+        .attr("offset", `${t * 100}%`)
+        .attr("stop-color", colorScale(value));
+    }
+
+    g.append("rect")
+      .attr("x", legendX)
+      .attr("y", 0)
+      .attr("width", legendWidth)
+      .attr("height", legendHeight)
+      .attr("rx", 2)
+      .style("fill", "url(#exp-legend-gradient)");
+
+    g.append("g")
+      .attr("transform", `translate(${legendX + legendWidth}, 0)`)
+      .call(legendAxis)
+      .selectAll("text")
+      .attr("fill", "currentColor")
+      .style("font-size", "9px");
+
+    // Legend for -1 (N/A)
+    g.append("rect")
+      .attr("x", legendX)
+      .attr("y", legendHeight + 15)
+      .attr("width", legendWidth)
+      .attr("height", 15)
+      .attr("fill", noDataColor)
+      .attr("stroke", "hsl(var(--border))")
+      .attr("stroke-width", 0.5);
+
+    g.append("text")
+      .attr("x", legendX + legendWidth + 5)
+      .attr("y", legendHeight + 15 + 10)
+      .attr("fill", "currentColor")
+      .style("font-size", "9px")
+      .text("N/A");
+
+  }, [YaxisList, XaxisList, HeatMapData, expRange]);
 
   return (
   expRange[0] === expRange[1] ? (<div className="w-full h-48 sm:h-64 flex items-center justify-center bg-muted/50 rounded-lg border border-dashed">
                           <p className="text-muted-foreground text-sm text-center px-4">
                             No expression data available for the selected gene in the specified time range.
                           </p>
-                        </div>) : (<div className="space-y-3">
-    {/* Color scale bar — ContactAreaChart style; colors still from ColorScaler */}
-    {HeatMapData && HeatMapData.length > 0 && (
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span>{expRange[0].toFixed(2)}</span>
-        <div
-          className="h-2.5 w-36 rounded-sm border border-border"
-          style={{
-            background: `linear-gradient(to right, ${[0, 0.25, 0.5, 0.75, 1]
-              .map((t) => colorScale(expRange[0] + t * (expRange[1] - expRange[0])))
-              .join(", ")})`,
-          }}
-        />
-        <span>{expRange[1].toFixed(2)}</span>
-        <span className="ml-2">Grey = N/A</span>
-      </div>
-    )}
-
+                        </div>) : (<div className="space-y-4">
     <ScrollArea className="w-full rounded-md" style={{ height: "600px" }}>
       <div className="relative w-max">
         {ExpLoading && (
@@ -274,7 +325,7 @@ const { DataList, YaxisList, XaxisList, expRange } = useMemo(() => {
             <svg ref={svgRef} />
             <div
               ref={tooltipRef}
-              className="absolute rounded-md border bg-background px-2 py-1 text-xs shadow-sm pointer-events-none opacity-0 transition-opacity z-10"
+              className="absolute bg-popover text-popover-foreground border border-border rounded-md px-2 py-1 text-xs shadow-md pointer-events-none opacity-0 transition-opacity z-10"
             />
           </>
         )}

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, TrendingUp, Dna, Shapes, ChevronsUpDown, X } from "lucide-react";
+import { Search, TrendingUp, Dna, Shapes, ChevronsUpDown, X, Network } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -21,6 +21,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CellDataChart } from "@/components/Browse/LineChart";
 import { MLineChart } from "@/components/Browse/MLineChart";
+import { ContactAreaChart } from "@/components/Browse/ContactAreaChart";
 import { OneCellCard } from "@/components/Browse/OneCellCard";
 import { SMSelect } from "@/components/utils/SMSelect";
 import { GeneExpressionSelector } from "@/components/Browse/ReporterGeneExpressionSelector";
@@ -537,6 +538,22 @@ const MAX_SELECT = 17;
                   </div>
 
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* ── Contact area with neighbouring cells ── */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Network className="h-5 w-5" />
+                  Contact area with neighbouring cells
+                </CardTitle>
+                <CardDescription>
+                  Shared contact area between {CellName} and each contacted cell across time points. Select one sample to inspect its neighbourhood.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ContactAreaChart CellName={CellName} defaultSample={SM} />
               </CardContent>
             </Card>
 
