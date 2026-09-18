@@ -8,7 +8,7 @@ import {
   SelectSeparator,
   SelectValue,
 } from "@/components/ui/select";
-import { SMList, SMGroupName } from "@/components/utils/usefulobject";
+import { SMList, SMGroupName, SampleRange, TimeResolution, SampleCellStage } from "@/components/utils/usefulobject";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -24,6 +24,32 @@ function getConditionLabel(sm: string): string {
     SMList[k].includes(sm)
   );
   return key ? SMGroupName[key] : "";
+}
+
+function getSampleMeta(sample: string): string {
+  const range = SampleRange[sample as keyof typeof SampleRange];
+  const resolution = TimeResolution[sample as keyof typeof TimeResolution];
+  const cells = SampleCellStage[sample as keyof typeof SampleCellStage];
+  if (range == null || resolution == null || cells == null) return "";
+  const unit =
+    SMList.NaturalF.includes(sample) || SMList.CompressF.includes(sample)
+      ? "s/TP"
+      : "min/TP";
+  return `1–${range} · ${resolution} ${unit} · ${cells} cells`;
+}
+
+function SampleLabel({ sample }: { sample: string }) {
+  const meta = getSampleMeta(sample);
+  return (
+    <span className="flex items-baseline gap-1.5 min-w-0">
+      <span>{sample}</span>
+      {meta && (
+        <span className="text-[10px] text-muted-foreground font-normal whitespace-nowrap">
+          {meta}
+        </span>
+      )}
+    </span>
+  );
 }
 
 export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
@@ -54,6 +80,7 @@ export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
   };
 
   const conditionLabel = getConditionLabel(SM);
+  const sampleMeta = getSampleMeta(SM);
 
   const triggerTheme = 
   SMList.Natural.includes(SM) ? "border-sky-400/60 hover:border-sky-400/90 text-sky-600 bg-sky-500/5 hover:bg-sky-500/10 focus:ring-sky-400/50" 
@@ -71,21 +98,28 @@ export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
         <Select value={SM} onValueChange={handleValueChange}>
           <SelectTrigger
             className={cn(
-              "w-72 h-auto min-h-10 border transition-all shadow-sm py-1.5 [&>span]:line-clamp-none",
+              "w-96 h-auto min-h-10 border transition-all shadow-sm py-1.5 [&>span]:line-clamp-none",
               triggerTheme
             )}
           >
             <SelectValue placeholder="Select embryo sample">
               <span className="flex flex-col items-start gap-0.5 text-left leading-tight">
-                <span className="text-[11px] font-medium opacity-70 truncate max-w-[15rem]">
+                <span className="text-[11px] font-medium opacity-70 truncate max-w-[22rem]">
                   {conditionLabel}
                 </span>
-                <span className="text-sm font-medium">{SM}</span>
+                <span className="text-sm font-medium">
+                  {SM}
+                  {sampleMeta && (
+                    <span className="ml-1.5 text-[11px] font-normal opacity-70">
+                      {sampleMeta}
+                    </span>
+                  )}
+                </span>
               </span>
             </SelectValue>
           </SelectTrigger>
 
-          <SelectContent className="min-w-[220px] max-h-[320px] p-1">
+          <SelectContent className="min-w-[340px] max-h-[320px] p-1">
 
             <SelectGroup>
               <SelectLabel className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold text-sky-500 uppercase tracking-wider">
@@ -114,7 +148,7 @@ export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
                         SM === sample ? "bg-sky-400" : "bg-sky-400/30"
                       )}
                     />
-                    {sample}
+                    <SampleLabel sample={sample} />
                   </span>
                 </SelectItem>
               ))}
@@ -148,7 +182,7 @@ export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
                         SM === sample ? "bg-violet-400" : "bg-violet-400/30"
                       )}
                     />
-                    {sample}
+                    <SampleLabel sample={sample} />
                   </span>
                 </SelectItem>
               ))}
@@ -182,7 +216,7 @@ export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
                         SM === sample ? "bg-green-400" : "bg-green-400/30"
                       )}
                     />
-                    {sample}
+                    <SampleLabel sample={sample} />
                   </span>
                 </SelectItem>
               ))}
@@ -216,7 +250,7 @@ export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
                         SM === sample ? "bg-violet-400" : "bg-violet-400/30"
                       )}
                     />
-                    {sample}
+                    <SampleLabel sample={sample} />
                   </span>
                 </SelectItem>
               ))}
@@ -250,7 +284,7 @@ export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
                         SM === sample ? "bg-pink-400" : "bg-pink-400/30"
                       )}
                     />
-                    {sample}
+                    <SampleLabel sample={sample} />
                   </span>
                 </SelectItem>
               ))}
@@ -282,7 +316,7 @@ export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
                         SM === sample ? "bg-pink-400" : "bg-pink-400/30"
                       )}
                     />
-                    {sample}
+                    <SampleLabel sample={sample} />
                   </span>
                 </SelectItem>
               ))}
@@ -314,7 +348,7 @@ export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
                         SM === sample ? "bg-pink-400" : "bg-pink-400/30"
                       )}
                     />
-                    {sample}
+                    <SampleLabel sample={sample} />
                   </span>
                 </SelectItem>
               ))}

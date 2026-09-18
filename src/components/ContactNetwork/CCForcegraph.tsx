@@ -1,5 +1,5 @@
 // ForceTimelineGraph.tsx
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Loader } from "lucide-react";
 import * as d3 from "d3";
 import { ColorScaler } from "@/components/utils/ColorScaler";
@@ -29,7 +29,10 @@ type Props = {
   SMType : string;
   TP: number;
   GID : string;
+  GID2?: string;
   ScGene: string;
+  ScGene2?: string;
+  Gene1N2?: [string, string];
   colorMode?: string;
   CenterCell?:string;
   setCenterCell: (C: string) => void;
@@ -39,14 +42,27 @@ type Props = {
 const contains = (d: { start: number; end: number }, time: number) =>
   d.start <= time && time <= d.end;
 
-const scaleExp = ColorScaler([0,1])
+const scaleExp = ColorScaler([0,1]);
+
+const DualExpColorScaler = (v: number) => {
+  switch (v) {
+    case 0: return "grey";
+    case 1: return "blue";
+    case 2: return "red";
+    case 3: return "purple";
+    default: return "grey";
+  }
+};
 
 export const CCForcegraph: React.FC<Props> = ({
   SM,
   SMType,
   TP = 100,
   GID,
+  GID2 = "",
   ScGene,
+  ScGene2 = "",
+  Gene1N2 = ["", ""],
   colorMode,
   CenterCell,
   setCenterCell,
@@ -61,6 +77,7 @@ export const CCForcegraph: React.FC<Props> = ({
   const [ExpData, setExpData] = useState<any>({});
   
   const selectedNodeRef = useRef<string>(CenterCell??"");
+  const isDualExp = Boolean(GID2 || ScGene2);
 
   // Constants
   const NODE_RADIUS = { default: 5, highlight: 7, bg: 5 };
@@ -98,55 +115,68 @@ export const CCForcegraph: React.FC<Props> = ({
         };
         fetchData();
       }, [SM]);
-    // load ExpDats
+
+    // load reporter ExpDats (single or dual)
       useEffect(() => {
-        if (!GID ||  colorMode !== "expression") {
-          setExpData(null);
+        if (!GID || colorMode !== "expression") {
+          if (!ScGene) setExpData(null);
           return;
         }
+        // Prefer single-cell fetch when ScGene is active
+        if (ScGene) return;
+        const controller = new AbortController();
         const fetchData = async () => {
           try {
             setLoading(true);
-            const url = `${API_BASE}/Exp/CytoExp?SM=${SM}&ExpColName=${GID}`
-            const response = await fetch(url);
+            const url = GID2
+              ? `${API_BASE}/Exp/DualEene?SM=${SM}&TP=${TP}&ExpColName=${GID},${GID2}`
+              : `${API_BASE}/Exp/CytoExp?SM=${SM}&ExpColName=${GID}`;
+            const response = await fetch(url, { signal: controller.signal });
             if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`);
             }
             const jsonData = await response.json();
             setExpData(jsonData);
-          } catch (err) {
+          } catch (err: any) {
+            if (err?.name === "AbortError") return;
             setExpData(null);
           } finally {
             setLoading(false);
           }
         };
         fetchData();
-      }, [GID,SM]);
+        return () => controller.abort();
+      }, [GID, GID2, SM, TP, colorMode, ScGene]);
   
-      // load single cell Expression Data
+      // load single cell Expression Data (single or dual)
   useEffect(() => {
     if (!ScGene || colorMode !== "expression") {
-          setExpData(null);
+          if (!GID) setExpData(null);
           return;
         }
+    const controller = new AbortController();
     const fetchData = async () => {
       try {
         setLoading(true);
-        const url = `${API_BASE}/scExp?DataSet=P009D01S&Gene=${ScGene}`;
-        const response = await fetch(url);
+        const url = ScGene2
+          ? `${API_BASE}/scExp/DualExp?DataSet=P009D01S&Gene=${ScGene},${ScGene2}`
+          : `${API_BASE}/scExp?DataSet=P009D01S&Gene=${ScGene}`;
+        const response = await fetch(url, { signal: controller.signal });
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const jsonData = await response.json();
         setExpData(jsonData);
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
         setExpData(null);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  },[ScGene])
+    return () => controller.abort();
+  },[ScGene, ScGene2, colorMode, GID])
 
     // set current celllist for cell selection
       useEffect(() => {
@@ -159,10 +189,16 @@ export const CCForcegraph: React.FC<Props> = ({
 
   // ============ HELPER FUNCTIONS ============
 
+  const resolveExpValue = (nodeId: string): number | undefined => {
+    const raw = ExpData?.[nodeId]?.[TP] ?? ExpData?.[nodeId];
+    return typeof raw === "number" ? raw : undefined;
+  };
+
   const getNodeColor = (nodeId: string, isSelected: boolean, isLinked: boolean): string => {
     if (colorMode === "expression") {
-      const exp = ExpData?.[nodeId]?.[TP] ?? ExpData?.[nodeId];
-      return exp >= 0 ? scaleExp(exp) : NODE_COLOR.noExp;
+      const exp = resolveExpValue(nodeId);
+      if (exp == null || exp < 0) return NODE_COLOR.noExp;
+      return isDualExp ? DualExpColorScaler(exp) : scaleExp(exp);
     }
     if (isSelected) return NODE_COLOR.highlight;
     if (isLinked) return NODE_COLOR.contact;
@@ -178,8 +214,9 @@ export const CCForcegraph: React.FC<Props> = ({
 
   const getInitialNodeColor = (nodeId: string): string => {
     if (colorMode === "expression") {
-      const exp = ExpData?.[nodeId]?.[TP] ?? ExpData?.[nodeId];
-      return exp >= 0 ? scaleExp(exp) : NODE_COLOR.noExp;
+      const exp = resolveExpValue(nodeId);
+      if (exp == null || exp < 0) return NODE_COLOR.noExp;
+      return isDualExp ? DualExpColorScaler(exp) : scaleExp(exp);
     }
     return NODE_COLOR.default;
   };
@@ -324,97 +361,128 @@ export const CCForcegraph: React.FC<Props> = ({
     // ============ COLOR LEGEND (Gene Mode) ============
 
     if (colorMode === "expression") {
-      const legendWidth = 10;
-      const legendHeight = 100;
       const legendX = width / 2 - 60;
       const legendY = -height / 2 + 20;
+      const gene1 = Gene1N2?.[0] || "Gene1";
+      const gene2 = Gene1N2?.[1] || "Gene2";
 
-      // Create gradient (in defs, outside zoomable group)
-      const defs = svg.selectAll("defs").data([null]).join("defs");
-      const gradient = defs
-        .selectAll("linearGradient#exp-gradient")
-        .data([null])
-        .join("linearGradient")
-        .attr("id", "exp-gradient")
-        .attr("x1", "0%")
-        .attr("x2", "0%")
-        .attr("y1", "100%")
-        .attr("y2", "0%");
+      // Clear any previous legend
+      svg.selectAll("g.legend").remove();
 
-      const stops = [0, 0.25, 0.5, 0.75, 1];
-      gradient
-        .selectAll("stop")
-        .data(stops)
-        .join("stop")
-        .attr("offset", (d) => `${d * 100}%`)
-        .attr("stop-color", (d) => scaleExp(d));
+      if (isDualExp) {
+        const dualItems = [
+          { color: "grey", label: "Neither" },
+          { color: "blue", label: gene1 },
+          { color: "red", label: gene2 },
+          { color: "purple", label: `${gene1} & ${gene2}` },
+        ];
+        const legend = svg
+          .append("g")
+          .attr("class", "legend")
+          .attr("transform", `translate(${legendX - 40},${legendY})`);
 
-      // Legend group - ADD TO SVG, NOT TO g
-      const legend = svg
-        .selectAll("g.legend")
-        .data([null])
-        .join("g")
-        .attr("class", "legend")
-        .attr("transform", `translate(${legendX},${legendY})`);
+        legend
+          .append("text")
+          .attr("x", 0)
+          .attr("y", 0)
+          .attr("font-size", 11)
+          .attr("font-weight", "bold")
+          .attr("fill", "white")
+          .text("Dual expression");
 
-      // Background
-      // legend
-      //   .selectAll("rect.legend-bg")
-      //   .data([null])
-      //   .join("rect")
-      //   .attr("class", "legend-bg")
-      //   .attr("width", 40)
-      //   .attr("height", legendHeight + 20)
-      //   .attr("fill", "white")
-      //   .attr("stroke", "#ddd")
-      //   .attr("rx", 4)
-      //   .style("opacity", 0.);
+        dualItems.forEach((item, i) => {
+          const y = 18 + i * 16;
+          legend
+            .append("rect")
+            .attr("x", 0)
+            .attr("y", y - 8)
+            .attr("width", 10)
+            .attr("height", 10)
+            .attr("fill", item.color)
+            .attr("rx", 1);
+          legend
+            .append("text")
+            .attr("x", 16)
+            .attr("y", y)
+            .attr("font-size", 10)
+            .attr("fill", "white")
+            .attr("dominant-baseline", "central")
+            .text(item.label);
+        });
+      } else {
+        const legendWidth = 10;
+        const legendHeight = 100;
 
-      // Gradient rectangle
-      legend
-        .selectAll("rect.legend-gradient")
-        .data([null])
-        .join("rect")
-        .attr("class", "legend-gradient")
-        .attr("x", 10)
-        .attr("y", 10)
-        .attr("width", legendWidth)
-        .attr("height", legendHeight)
-        .attr("fill", "url(#exp-gradient)")
-        .attr("stroke", "#999")
-        .attr("stroke-width", 0.5);
+        // Create gradient (in defs, outside zoomable group)
+        const defs = svg.selectAll("defs").data([null]).join("defs");
+        const gradient = defs
+          .selectAll("linearGradient#exp-gradient")
+          .data([null])
+          .join("linearGradient")
+          .attr("id", "exp-gradient")
+          .attr("x1", "0%")
+          .attr("x2", "0%")
+          .attr("y1", "100%")
+          .attr("y2", "0%");
 
-      // Labels
-      legend
-        .selectAll("text.legend-label")
-        .data([
-          { y: 10 + legendHeight, label: "0", align: "start" },
-          { y: 10 + legendHeight / 2, label: "0.5", align: "start" },
-          { y: 10, label: "1", align: "start" }
-        ])
-        .join("text")
-        .attr("class", "legend-label")
-        .attr("x", legendWidth + 15)
-        .attr("y", (d) => d.y)
-        .attr("font-size", 10)
-        .attr("fill", "white")
-        .attr("text-anchor", "start")
-        .attr("dominant-baseline", "central")
-        .text((d) => d.label);
+        const stops = [0, 0.25, 0.5, 0.75, 1];
+        gradient
+          .selectAll("stop")
+          .data(stops)
+          .join("stop")
+          .attr("offset", (d) => `${d * 100}%`)
+          .attr("stop-color", (d) => scaleExp(d));
 
-      // Title
-      legend
-        .selectAll("text.legend-title")
-        .data([null])
-        .join("text")
-        .attr("class", "legend-title")
-        .attr("x", 20)
-        .attr("y", -5)
-        .attr("font-size", 11)
-        .attr("font-weight", "bold")
-        .attr("fill", "white")
-        .attr("text-anchor", "middle")
-        .text("Expression");
+        // Legend group - ADD TO SVG, NOT TO g
+        const legend = svg
+          .append("g")
+          .attr("class", "legend")
+          .attr("transform", `translate(${legendX},${legendY})`);
+
+        // Gradient rectangle
+        legend
+          .append("rect")
+          .attr("class", "legend-gradient")
+          .attr("x", 10)
+          .attr("y", 10)
+          .attr("width", legendWidth)
+          .attr("height", legendHeight)
+          .attr("fill", "url(#exp-gradient)")
+          .attr("stroke", "#999")
+          .attr("stroke-width", 0.5);
+
+        // Labels
+        legend
+          .selectAll("text.legend-label")
+          .data([
+            { y: 10 + legendHeight, label: "0", align: "start" },
+            { y: 10 + legendHeight / 2, label: "0.5", align: "start" },
+            { y: 10, label: "1", align: "start" }
+          ])
+          .join("text")
+          .attr("class", "legend-label")
+          .attr("x", legendWidth + 15)
+          .attr("y", (d) => d.y)
+          .attr("font-size", 10)
+          .attr("fill", "white")
+          .attr("text-anchor", "start")
+          .attr("dominant-baseline", "central")
+          .text((d) => d.label);
+
+        // Title
+        legend
+          .append("text")
+          .attr("class", "legend-title")
+          .attr("x", 20)
+          .attr("y", -5)
+          .attr("font-size", 11)
+          .attr("font-weight", "bold")
+          .attr("fill", "white")
+          .attr("text-anchor", "middle")
+          .text("Expression");
+      }
+    } else {
+      svg.selectAll("g.legend").remove();
     }
 
     // ============ UPDATE FUNCTION ============
@@ -507,7 +575,7 @@ export const CCForcegraph: React.FC<Props> = ({
       simulation.stop();
       svg.selectAll("*").remove();
     };
-  }, [width, height, TP, CytoData, ExpData, colorMode]);
+  }, [width, height, TP, CytoData, ExpData, colorMode, isDualExp, Gene1N2]);
 
 const ZoomTo = (NodeID) => {
   if (!svgRef.current) return;

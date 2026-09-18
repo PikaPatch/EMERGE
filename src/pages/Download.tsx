@@ -456,7 +456,7 @@ const Download = () => {
               <Button
                 className="w-full"
                 variant="secondary"
-                onClick={() => { window.open("https://www.nature.com/articles/s42003-025-09220-3", "_blank", "noopener,noreferrer"); }}
+                onClick={() => { window.open("https://doi.org/10.1038/s41467-020-19863-x", "_blank", "noopener,noreferrer"); }}
               >
                 <Link2 className="mr-2 h-4 w-4" />
                 Mechanically-compressed

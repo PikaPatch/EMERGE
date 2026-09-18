@@ -55,42 +55,6 @@ interface Emb3DProps {
 
 const unCellOpacity = 0.05;
 
-/**
- * Highlighted (opaque) cells write depth and draw after ghosts.
- * Ghost/transparent cells skip depth writes so they cannot randomly occlude highlights
- * when Three.js re-sorts transparent meshes on orbit.
- */
-function applyCellOpacity(
-  mesh: THREE.Mesh,
-  mat: THREE.MeshStandardMaterial,
-  opacity: number
-) {
-  if (opacity >= 1) {
-    mat.transparent = false;
-    mat.opacity = 1;
-    mat.depthWrite = true;
-    mat.depthTest = true;
-    mesh.renderOrder = 2;
-  } else if (opacity <= 0) {
-    mat.transparent = true;
-    mat.opacity = 0;
-    mat.depthWrite = false;
-    mesh.renderOrder = 0;
-  } else {
-    mat.transparent = true;
-    mat.opacity = opacity;
-    mat.depthWrite = false;
-    mat.depthTest = true;
-    mesh.renderOrder = opacity >= 0.5 ? 1 : 0;
-  }
-  mat.needsUpdate = true;
-}
-
-const getMeshMaterial = (mesh: THREE.Mesh): THREE.MeshStandardMaterial => {
-  const m = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-  return m as THREE.MeshStandardMaterial;
-};
-
 
 const getOBJcenter = (m) => {
   const box = new THREE.Box3().setFromObject(m);
@@ -372,54 +336,53 @@ const LoadedEmbryoModel = ({
   }, [SM, TP, CenterCell]);
 
 
-  // MEMOIZE: extract meshes once per new scene
-  const meshes = useMemo(() => {
-    const list: THREE.Mesh[] = [];
-    if (!obj) return list;
+  // MEMOIZE: extract materials once per new scene
+  const { materials } = useMemo(() => {
+    const mats: THREE.Material[] = [];
+    if (!obj) return { materials: mats };
     obj.traverse((child) => {
       if ((child as THREE.Mesh).isMesh && (child as THREE.Mesh).material) {
         const mesh = child as THREE.Mesh;
-        const mats = Array.isArray(mesh.material)
+        const childMats = Array.isArray(mesh.material)
           ? mesh.material
           : [mesh.material];
-        mats.forEach((m) => {
+        childMats.forEach((m) => {
           m.side = THREE.DoubleSide;
+          mats.push(m);
         });
-        list.push(mesh);
       }
     });
-    return list;
+    return { materials: mats };
   }, [obj]);
 
 
   // CenterCell color and opacity (ContactNet mode)
 useEffect(() => {
-  if (!meshes.length || EmbMode !== "ContactNet") return;
+  if (!materials.length || EmbMode !== "ContactNet") return;
 
   if (CenterCell.length === 0) {
-    meshes.forEach((mesh) => {
-      const mat = getMeshMaterial(mesh);
-      applyCellOpacity(mesh, mat, 1);
+    materials.forEach((mat: THREE.MeshStandardMaterial) => {
+      mat.transparent = true;
+      mat.opacity = 1;
       mat.color = new THREE.Color(MonoColor);
     });
   } else if (CenterCell.length > 0 && ConCells.length === 0) {
-    meshes.forEach((mesh) => {
-      const mat = getMeshMaterial(mesh);
+    materials.forEach((mat: THREE.MeshStandardMaterial) => {
+      mat.transparent = true;
       const CellName = m2C(mat.name || "");
-      applyCellOpacity(mesh, mat, CellName === CenterCell ? 1 : unCellOpacity);
+      mat.opacity = CellName === CenterCell ? 1 : unCellOpacity;
       mat.color = CellName === CenterCell
         ? new THREE.Color("red")
         : new THREE.Color(MonoColor); 
     });
   } else if (CenterCell.length > 0 && ConCells.length > 0) {
-    meshes.forEach((mesh) => {
-      const mat = getMeshMaterial(mesh);
+    materials.forEach((mat: THREE.MeshStandardMaterial) => {
+      mat.transparent = true;
       const CellName = m2C(mat.name || "");
-      const opacity =
+      mat.opacity =
         CellName === CenterCell ? 1
         : ConCells.includes(CellName) ? 0.5
         : unCellOpacity;
-      applyCellOpacity(mesh, mat, opacity);
       mat.color =
         CellName === CenterCell
           ? new THREE.Color("red")
@@ -430,7 +393,7 @@ useEffect(() => {
   }
 
   invalidate();
-}, [CenterCell, ConCells, MonoColor, meshes, EmbMode]); 
+}, [CenterCell, ConCells, MonoColor, materials, EmbMode]); 
 
 // useEffect(() => {
 //   console.log(HighligtCells)
@@ -438,59 +401,47 @@ useEffect(() => {
 
   // Per-cell color + opacity (EMBobj mode)
   useLayoutEffect(() => {
-    if (!meshes.length || EmbMode !== "EMBobj") return;
+    if (!materials.length || EmbMode !== "EMBobj") return;
     setExpLoading(true);
     const monoC = new THREE.Color(MonoColor);
     const fallback = new THREE.Color("#999999");
     
-    for (const mesh of meshes) {
-      const mat = getMeshMaterial(mesh);
+    for (const mat of materials as THREE.MeshStandardMaterial[]) {
       const cell = m2C(mat.name || "");
+      mat.transparent = true;
 
       switch (MonoFate) {
         case "mono":
           mat.color.copy(monoC);
-          applyCellOpacity(
-            mesh,
-            mat,
+          mat.opacity =
             HighligtCells.includes(cell) || HighligtCells.includes("All")
               ? 1
-              : unCellOpacity
-          );
+              : unCellOpacity;
           break;
 
         case "fate":
           mat.color.set(C2FateColorMap.get(cell) ?? fallback);
-          applyCellOpacity(
-            mesh,
-            mat,
+          mat.opacity =
             HighligtCells.includes(cell) || HighligtCells.includes("All")
               ? 1
-              : unCellOpacity
-          );
+              : unCellOpacity;
           break;
 
         case "lineage":
           mat.color.copy(C2LineageColorMap.get(cell) ?? fallback);
-          applyCellOpacity(
-            mesh,
-            mat,
+          mat.opacity =
             HighligtCells.includes(cell) || HighligtCells.includes("All")
               ? 1
-              : unCellOpacity
-          );
+              : unCellOpacity;
           break;
 
         case "expression": {
           if (ExpData === null) {
             mat.color.copy(fallback);
-            applyCellOpacity(
-              mesh,
-              mat,
+            mat.opacity =
               HighligtCells.includes(cell) || HighligtCells.includes("All")
                 ? 1
-                : unCellOpacity
-            );
+                : unCellOpacity;
             break;
           }
           const exp = ExpData?.[cell];
@@ -503,17 +454,12 @@ useEffect(() => {
             const isExpressed = expressionEnabled
               ? exp >= expressionCutoff
               : true;
-            applyCellOpacity(
-              mesh,
-              mat,
-              isHighlighted && isExpressed ? 1 : unCellOpacity
-            );
+            mat.opacity = isHighlighted && isExpressed ? 1 : unCellOpacity;
           } else {
             mat.color.copy(fallback);
+            mat.opacity = isHighlighted ? 1 : unCellOpacity;
             if (expressionEnabled) {
-              applyCellOpacity(mesh, mat, 0);
-            } else {
-              applyCellOpacity(mesh, mat, isHighlighted ? 1 : unCellOpacity);
+              mat.opacity = 0;
             }
           }
           break;
@@ -523,13 +469,10 @@ useEffect(() => {
           const s = ShapeData?.[cell];
           if (typeof s === "number") mat.color.set(ShapeColorScaler(s));
           else mat.color.copy(fallback);
-          applyCellOpacity(
-            mesh,
-            mat,
+          mat.opacity =
             HighligtCells.includes(cell) || HighligtCells.includes("All")
               ? 1
-              : unCellOpacity
-          );
+              : unCellOpacity;
           break;
         }
       }
@@ -538,7 +481,7 @@ useEffect(() => {
     setExpLoading(false);
     invalidate();
   }, [
-    MonoFate, MonoColor, meshes, CData, ExpData, ShapeData,
+    MonoFate, MonoColor, materials, CData, ExpData, ShapeData,
     GID2, ScGene2, HighligtCells, expressionEnabled, expressionCutoff,
   ]);
 

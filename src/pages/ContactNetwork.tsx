@@ -29,7 +29,9 @@ const ContactNetwork = () => {
   const [SM, setSM] = useState("Sample6");
   const [SMType, setSMType] = useState<"CMap8" | "CShaper17" | "EmbSAM4567" | "EmbSAM89" | "MT_lag1" | "MT_pop1" | "MT_wee">("CMap8");
   const [Gene, setGene] = useState("");
+  const [Gene2, setGene2] = useState("");
   const [GID, setGID] = useState("");
+  const [GID2, setGID2] = useState("");
   const [TP, setTP] = useState(50);
   const [InputTP, setInputTP] = useState(50);
   const [colorMode, setColorMode] = useState<"default" | "fate" | "lineage" | "expression" | "shape">("default");
@@ -37,20 +39,26 @@ const ContactNetwork = () => {
   const [CenterCell, setCenterCell] = useState("");
   const [ExpressionType, setExpressionType] = useState<"Reporters" | "SingleCell">("SingleCell");
   const [ScGene, setScGene] = useState("");
+  const [ScGene2, setScGene2] = useState("");
+  const [Gene1N2, setGene1N2] = useState<[string, string]>(["", ""]);
   const [EmbCellList, setEmbCellList] = useState(null);
 
   const EmptyBox = (_newSM: string) => {
-    setCenterCell(""); setGene(""); setGID(""); setTP(50); setInputTP(50);
+    setCenterCell(""); setGene(""); setGene2(""); setGID(""); setGID2("");
+    setScGene(""); setScGene2(""); setGene1N2(["", ""]);
+    setTP(50); setInputTP(50);
   };
 
   useEffect(() => { setCenterCell(""); }, [TP]);
 
   useEffect(() => {
-    setGID(""); setGene(""); setScGene(""); setCenterCell("");
+    setGID(""); setGID2(""); setGene(""); setGene2("");
+    setScGene(""); setScGene2(""); setGene1N2(["", ""]); setCenterCell("");
   }, [colorMode]);
 
   useEffect(() => {
-    setGID(""); setGene(""); setScGene(""); setColorMode("default");
+    setGID(""); setGID2(""); setGene(""); setGene2("");
+    setScGene(""); setScGene2(""); setGene1N2(["", ""]); setColorMode("default");
   }, [SM, SMType]);
 
   useEffect(() => {
@@ -178,11 +186,18 @@ const ContactNetwork = () => {
     <div className="flex-1 min-h-0 overflow-auto p-3">
       {colorMode === "expression" ? (
         <GeneExpressionSelector
-          SM={SM} scDualExp={false}
+          SM={SM}
+          DualExp={true}
+          scDualExp={true}
           Gene={Gene} setGene={setGene}
+          Gene2={Gene2} setGene2={setGene2}
           GID={GID} setGID={setGID}
+          GID2={GID2} setGID2={setGID2}
+          setGene1N2={setGene1N2}
           ExpressionType={ExpressionType} setExpressionType={setExpressionType}
-          ScGene={ScGene} setScGene={setScGene} showLegend={false}
+          ScGene={ScGene} setScGene={setScGene}
+          ScGene2={ScGene2} setScGene2={setScGene2}
+          showLegend={true}
         />
       ) : (
         <div className="h-full flex flex-col justify-center items-center text-center text-xs text-white/40 px-2 py-6 gap-4">
@@ -280,7 +295,9 @@ const ContactNetwork = () => {
             <div className="flex-1 min-h-0 overflow-hidden">
               <CCForcegraph
                 TP={TP} SM={SM} SMType={SMType}
-                GID={GID} ScGene={ScGene}
+                GID={GID} GID2={GID2}
+                ScGene={ScGene} ScGene2={ScGene2}
+                Gene1N2={Gene1N2}
                 colorMode={colorMode} CenterCell={CenterCell}
                 setCenterCell={setCenterCell} setEmbCellList={setEmbCellList}
               />
@@ -350,7 +367,9 @@ const ContactNetwork = () => {
             <div className="h-[50vw] min-h-[280px] max-h-[420px] overflow-hidden">
               <CCForcegraph
                 TP={TP} SM={SM} SMType={SMType}
-                GID={GID} ScGene={ScGene}
+                GID={GID} GID2={GID2}
+                ScGene={ScGene} ScGene2={ScGene2}
+                Gene1N2={Gene1N2}
                 colorMode={colorMode} CenterCell={CenterCell}
                 setCenterCell={setCenterCell} setEmbCellList={setEmbCellList}
               />
