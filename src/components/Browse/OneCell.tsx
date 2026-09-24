@@ -189,10 +189,12 @@ export const OneCell = ({
           ref={cameraRef}
           makeDefault
           position={CameraPosi}
-        />
+        >
+          {/* Light moves with the camera so the facing side stays lit while orbiting */}
+          <directionalLight position={[2, 2, 4]} intensity={1} />
+        </PerspectiveCamera>
         <ZoomController zoom={zoom} initialZ={CameraPosi[2]} />
         <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 10, 10]} intensity={1} />
         <LoadedEmbryoModel
           SM={SM}
           TP={TP}

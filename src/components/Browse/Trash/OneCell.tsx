@@ -1,20 +1,12 @@
-import { useRef, Suspense, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import * as THREE from "three";
-import { useLoader } from "@react-three/fiber";
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import { Html, OrbitControls, PerspectiveCamera } from "@react-three/drei";
+import { Loader } from "lucide-react";
 import type { OrbitControls as OrbitControlsType } from "three-stdlib";
 import type { PerspectiveCamera as PerspectiveCameraType } from "three";
 import { API_BASE } from "@/components/utils/API_BASE";
-
-const LoadingFallback = () => (
-  <Html center>
-    <div className="text-foreground text-sm font-bold p-2 rounded-lg">
-      Loading...
-    </div>
-  </Html>
-);
 
 const getOBJcenter = (m: THREE.Object3D) => {
   const box = new THREE.Box3().setFromObject(m);
@@ -35,78 +27,95 @@ const shiftPosi = (obj: THREE.Object3D) => {
 
 interface LoadedModelProps {
   SM: string;
-  SMType: string;
   TP: number;
   CellName: string;
   Color: string;
-  groupRef: React.RefObject<THREE.Group>;
+  setLoading: (loading: boolean) => void;
 }
 
-const LoadedEmbryoModel = ({ SM,SMType, TP, CellName, Color, groupRef }: LoadedModelProps) => {
-  if (!TP || !CellName) return null;
-
-  const objPath = `${API_BASE}/model/SingleCellOBJ?SM=${SM}&SMType=${SMType}&TP=${TP}&CellName=${CellName}`;
-  const obj = useLoader(OBJLoader, objPath);
-
-  obj.traverse((child) => {
-    if (child instanceof THREE.Mesh) {
-      child.material = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(Color),
-        metalness: 0.5,
-        roughness: 0.5,
-        side: THREE.DoubleSide,
-      });
-    }
-  });
+const LoadedEmbryoModel = ({ SM, TP, CellName, Color, setLoading }: LoadedModelProps) => {
+  const [obj, setObj] = useState<THREE.Group | null>(null);
 
   useEffect(() => {
-    if (groupRef.current) {
-      // Clear previous children
-      while (groupRef.current.children.length > 0) {
-        const child = groupRef.current.children[0];
-        groupRef.current.remove(child);
-        if (child instanceof THREE.Mesh) {
-          child.geometry?.dispose();
-          if (Array.isArray(child.material)) {
-            child.material.forEach((mat) => mat.dispose());
-          } else {
-            child.material?.dispose();
-          }
-        }
-      }
+    if (!TP || !CellName) return;
 
-      // Add new model
-      const clonedObj = obj.clone();
-      clonedObj.position.copy(shiftPosi(clonedObj));
-      groupRef.current.add(clonedObj);
-    }
+    const controller = new AbortController();
+    const loader = new OBJLoader();
+    const url = `${API_BASE}/model/SingleCellOBJ?SM=${SM}&TP=${TP}&CellName=${CellName}`;
+
+    setObj(null);
+    setLoading(true);
+
+    fetch(url, { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+        return res.text();
+      })
+      .then((text) => {
+        const parsed = loader.parse(text);
+        setObj(parsed);
+      })
+      .catch((err) => {
+        if (err.name === "AbortError") {
+          console.log(`OBJ fetch aborted for ${CellName} TP=${TP}`);
+        } else {
+          console.warn("OBJ load failed:", err.message);
+          setObj(null);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     return () => {
-      if (groupRef.current && groupRef.current.children.length > 0) {
-        const child = groupRef.current.children[0];
-        groupRef.current.remove(child);
-        if (child instanceof THREE.Mesh) {
-          child.geometry?.dispose();
-          if (Array.isArray(child.material)) {
-            child.material.forEach((mat) => mat.dispose());
-          } else {
-            child.material?.dispose();
-          }
-        }
-      }
+      controller.abort();
     };
-  }, [obj, groupRef]);
+  }, [SM, TP, CellName]);
 
+  const cloned = useMemo(() => {
+    if (!obj) return null;
+    const c = obj.clone(true);
+    c.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.material = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(Color),
+          metalness: 0.5,
+          roughness: 0.5,
+          side: THREE.DoubleSide,
+        });
+      }
+    });
+    c.position.copy(shiftPosi(c));
+    return c;
+  }, [obj, Color]);
+
+  if (!cloned) return null;
+
+  return <primitive object={cloned} />;
+};
+
+// Inner component that has access to the R3F camera via useThree
+interface ZoomControllerProps {
+  zoom: number;
+  initialZ: number;
+}
+
+const ZoomController = ({ zoom, initialZ }: ZoomControllerProps) => {
+  const { camera } = useThree();
+  useEffect(() => {
+    // zoom is 1–100; map to camera Z: zoom=100 → close (initialZ * 0.2), zoom=1 → far (initialZ * 2)
+    const newZ = initialZ * (2 - (zoom / 100) * 1.8);
+    camera.position.setZ(newZ);
+  }, [zoom, camera, initialZ]);
   return null;
 };
 
 interface CellViewerProps {
   SM: string;
-  SMType: string;
   TP: number;
   CellName: string;
   Color?: string;
-  CameraPosi?:[x: number, y: number, z: number];
+  CameraPosi?: [x: number, y: number, z: number];
 }
 
 /**
@@ -115,7 +124,6 @@ interface CellViewerProps {
  */
 export const OneCell = ({
   SM,
-  SMType,
   TP,
   CellName,
   Color = "#58D6FC",
@@ -123,44 +131,80 @@ export const OneCell = ({
 }: CellViewerProps) => {
   const controlsRef = useRef<OrbitControlsType>(null);
   const cameraRef = useRef<PerspectiveCameraType>(null);
-  const groupRef = useRef<THREE.Group>(new THREE.Group());
+  const [isLoading, setIsLoading] = useState(false);
+  const [zoom, setZoom] = useState(50); // default midpoint
 
   return (
-    <Canvas className="w-full h-full">
-      <PerspectiveCamera ref={cameraRef} makeDefault position={CameraPosi} />
-      <OrbitControls
-        ref={controlsRef}
-        autoRotate
-        enableZoom={true}
-        enablePan
-        enableRotate
-        zoomSpeed={0.6}
-        panSpeed={0.5}
-        rotateSpeed={0.4}
-        minDistance={50}
-        maxDistance={100}
-      />
+    <div style={{ position: "relative", width: "100%", height: "400px", flexShrink: 0 }}>
+      {/* Zoom slider overlay */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "12px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 10,
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          background: "rgba(0,0,0,0.45)",
+          borderRadius: "8px",
+          padding: "4px 12px",
+          userSelect: "none",
+        }}
+      >
+        <span style={{ color: "#fff", fontSize: "12px" }}>🔍</span>
+        <input
+          type="range"
+          min={1}
+          max={100}
+          value={zoom}
+          onChange={(e) => setZoom(Number(e.target.value))}
+          style={{ width: "120px", cursor: "pointer" }}
+        />
+        <span style={{ color: "#aaa", fontSize: "11px", minWidth: "28px" }}>
+          {zoom}%
+        </span>
+      </div>
 
-      <ambientLight intensity={1} />
-      <directionalLight position={[10, 10, 5]} intensity={1} />
-      <directionalLight position={[-10, -10, -5]} intensity={0.5} />
-      <pointLight position={[0, 0, 10]} intensity={0.3} color="#00d9ff" />
+      {isLoading && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 5,
+            pointerEvents: "none",
+          }}
+        >
+          <Loader className="animate-spin" />
+          Loading model...
+        </div>
+      )}
 
-      <axesHelper args={[5]} />
-
-      <group ref={groupRef} />
-
-      <Suspense fallback={<LoadingFallback />}>
+      <Canvas style={{ width: "100%", height: "100%" }}>
+        <PerspectiveCamera
+          ref={cameraRef}
+          makeDefault
+          position={CameraPosi}
+        />
+        <ZoomController zoom={zoom} initialZ={CameraPosi[2]} />
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[10, 10, 10]} intensity={1} />
         <LoadedEmbryoModel
-          key={`${SM}_${TP}`}
           SM={SM}
-          SMType={SMType}
           TP={TP}
           CellName={CellName}
           Color={Color}
-          groupRef={groupRef}
+          setLoading={setIsLoading}
         />
-      </Suspense>
-    </Canvas>
+        <OrbitControls
+          ref={controlsRef}
+          enableZoom={false}
+        />
+      </Canvas>
+    </div>
   );
 };

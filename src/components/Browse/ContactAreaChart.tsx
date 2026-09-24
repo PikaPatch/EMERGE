@@ -186,6 +186,25 @@ export const ContactAreaChart: React.FC<ContactAreaChartProps> = ({
     [rawPartners, rows]
   );
 
+  // Union of contacted cells across ALL samples (not gated on selected samples)
+  const unionPartners = useMemo(() => {
+    if (!payload) return [];
+    const names = new Set<string>();
+    for (const samplePayload of Object.values(payload)) {
+      for (const name of samplePayload?.partners ?? []) names.add(name);
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [payload]);
+
+  const samplesWithPartner = useMemo(() => {
+    if (!payload || !partnerCell) return new Set<string>();
+    const set = new Set<string>();
+    for (const [sampleName, samplePayload] of Object.entries(payload)) {
+      if (samplePayload?.partners?.includes(partnerCell)) set.add(sampleName);
+    }
+    return set;
+  }, [payload, partnerCell]);
+
   const areaData = useMemo(
     () =>
       rows.map((row) => {
@@ -199,31 +218,32 @@ export const ContactAreaChart: React.FC<ContactAreaChartProps> = ({
     [partners, rows]
   );
 
-  const availablePartners = useMemo(() => {
-    if (!payload || lineList.length === 0) return [];
-    const names = new Set<string>();
-    for (const sampleName of lineList) {
-      const samplePartners = payload[sampleName]?.partners ?? [];
-      for (const name of samplePartners) names.add(name);
-    }
-    return Array.from(names).sort((a, b) => a.localeCompare(b));
-  }, [lineList, payload]);
-
+  // Keep partner selection valid against the full union list (no auto-pick)
   useEffect(() => {
-    if (availablePartners.length === 0) {
+    if (unionPartners.length === 0) {
       setPartnerCell("");
       return;
     }
-    if (!availablePartners.includes(partnerCell)) {
-      setPartnerCell(availablePartners[0]);
+    if (partnerCell && !unionPartners.includes(partnerCell)) {
+      setPartnerCell("");
     }
-  }, [availablePartners, partnerCell]);
+  }, [unionPartners, partnerCell]);
+
+  // Drop selected samples that do not contain the chosen partner cell
+  useEffect(() => {
+    if (!partnerCell) return;
+    setLineList((prev) => {
+      const next = prev.filter((s) => samplesWithPartner.has(s));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [partnerCell, samplesWithPartner]);
 
   const partnerLineData = useMemo(() => {
     if (!payload || !partnerCell || lineList.length === 0) return [];
 
     const filtered: Record<string, Array<number | null>> = {};
     for (const sampleName of lineList) {
+      if (!samplesWithPartner.has(sampleName)) continue;
       const sampleRows = payload[sampleName]?.data ?? [];
       if (sampleRows.length === 0) continue;
       filtered[sampleName] = sampleRows.map((row) => {
@@ -248,7 +268,7 @@ export const ContactAreaChart: React.FC<ContactAreaChartProps> = ({
     return Array.from(timeMap.values()).sort(
       (a, b) => (a.time as number) - (b.time as number)
     );
-  }, [lineList, partnerCell, payload]);
+  }, [lineList, partnerCell, payload, samplesWithPartner]);
 
   const tps = rows.map((row) => row.TP);
 
@@ -257,6 +277,7 @@ export const ContactAreaChart: React.FC<ContactAreaChartProps> = ({
   const showSingleSample = view !== "line";
 
   const toggleSample = (name: string, checked: boolean) => {
+    if (!samplesWithPartner.has(name)) return;
     setLineList((prev) => {
       if (checked) {
         if (prev.includes(name) || prev.length >= MAX_SELECT) return prev;
@@ -267,13 +288,14 @@ export const ContactAreaChart: React.FC<ContactAreaChartProps> = ({
   };
 
   const toggleGroup = (samples: string[], checked: boolean) => {
+    const eligible = samples.filter((s) => samplesWithPartner.has(s));
     setLineList((prev) => {
       if (checked) {
-        const toAdd = samples.filter((s) => !prev.includes(s));
+        const toAdd = eligible.filter((s) => !prev.includes(s));
         const slots = MAX_SELECT - prev.length;
         return [...new Set([...prev, ...toAdd.slice(0, slots)])];
       }
-      return prev.filter((s) => !samples.includes(s));
+      return prev.filter((s) => !eligible.includes(s));
     });
   };
 
@@ -383,19 +405,35 @@ export const ContactAreaChart: React.FC<ContactAreaChartProps> = ({
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium">Select contacted cell</label>
                   <Select
-                    value={partnerCell}
+                    value={partnerCell || undefined}
                     onValueChange={setPartnerCell}
-                    disabled={availablePartners.length === 0}
+                    disabled={unionPartners.length === 0}
                   >
                     <SelectTrigger className="w-72">
-                      <SelectValue placeholder="Select a contacted cell" />
+                      <SelectValue placeholder="Please select a cell" />
                     </SelectTrigger>
                     <SelectContent className="max-h-80">
-                      {availablePartners.map((name) => (
-                        <SelectItem key={name} value={name}>{name}</SelectItem>
-                      ))}
+                      {unionPartners.map((name) => {
+                        // If samples are already chosen, grey out cells absent from all of them
+                        const inSelectedSamples =
+                          lineList.length === 0 ||
+                          lineList.some((s) => payload?.[s]?.partners?.includes(name));
+                        return (
+                          <SelectItem
+                            key={name}
+                            value={name}
+                            disabled={!inSelectedSamples && name !== partnerCell}
+                          >
+                            {name}
+                            {!inSelectedSamples ? " · not in selected samples" : ""}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {unionPartners.length} contacted cell{unionPartners.length === 1 ? "" : "s"} across all samples
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -411,12 +449,14 @@ export const ContactAreaChart: React.FC<ContactAreaChartProps> = ({
                       <Button
                         variant="outline"
                         role="combobox"
-                        disabled={!CellName}
+                        disabled={!CellName || !partnerCell}
                         className="w-72 justify-between font-normal"
                       >
-                        {lineList.length === 0
-                          ? "Select samples…"
-                          : `${lineList.length} sample${lineList.length > 1 ? "s" : ""} selected`}
+                        {!partnerCell
+                          ? "Select a contacted cell first…"
+                          : lineList.length === 0
+                            ? "Select samples…"
+                            : `${lineList.length} sample${lineList.length > 1 ? "s" : ""} selected`}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -437,37 +477,65 @@ export const ContactAreaChart: React.FC<ContactAreaChartProps> = ({
                       <ScrollArea className="h-72">
                         <div className="flex flex-col gap-2 pr-3">
                           {SAMPLE_GROUPS.map((group) => {
-                            const allChecked = group.samples.every((s) => lineList.includes(s));
+                            const eligible = group.samples.filter((s) => samplesWithPartner.has(s));
+                            const allChecked =
+                              eligible.length > 0 && eligible.every((s) => lineList.includes(s));
                             return (
                               <div key={group.label}>
                                 <div className="flex items-center gap-2 px-1 py-0.5">
                                   <Checkbox
                                     id={`contact-line-group-${group.label}`}
                                     checked={allChecked}
-                                    disabled={!allChecked && lineList.length >= MAX_SELECT}
-                                    onCheckedChange={(checked) => toggleGroup(group.samples, checked === true)}
+                                    disabled={
+                                      eligible.length === 0 ||
+                                      (!allChecked && lineList.length >= MAX_SELECT)
+                                    }
+                                    onCheckedChange={(checked) =>
+                                      toggleGroup(group.samples, checked === true)
+                                    }
                                   />
                                   <label
                                     htmlFor={`contact-line-group-${group.label}`}
-                                    className="text-xs font-semibold cursor-pointer leading-none"
+                                    className={`text-xs font-semibold leading-none ${
+                                      eligible.length === 0
+                                        ? "cursor-not-allowed text-muted-foreground/50"
+                                        : "cursor-pointer"
+                                    }`}
                                   >
                                     {group.label}
+                                    {eligible.length === 0 ? " · none" : ""}
                                   </label>
                                 </div>
                                 <div className="flex flex-wrap gap-x-3 gap-y-1 pl-6 pb-1">
-                                  {group.samples.map((sampleName) => (
-                                    <div key={sampleName} className="flex items-center gap-1">
-                                      <Checkbox
-                                        id={`contact-line-${sampleName}`}
-                                        checked={lineList.includes(sampleName)}
-                                        disabled={!lineList.includes(sampleName) && lineList.length >= MAX_SELECT}
-                                        onCheckedChange={(checked) => toggleSample(sampleName, checked === true)}
-                                      />
-                                      <label htmlFor={`contact-line-${sampleName}`} className="text-xs cursor-pointer">
-                                        {sampleName}
-                                      </label>
-                                    </div>
-                                  ))}
+                                  {group.samples.map((sampleName) => {
+                                    const hasPartner = samplesWithPartner.has(sampleName);
+                                    const checked = lineList.includes(sampleName);
+                                    return (
+                                      <div key={sampleName} className="flex items-center gap-1">
+                                        <Checkbox
+                                          id={`contact-line-${sampleName}`}
+                                          checked={checked}
+                                          disabled={
+                                            !hasPartner ||
+                                            (!checked && lineList.length >= MAX_SELECT)
+                                          }
+                                          onCheckedChange={(checkedValue) =>
+                                            toggleSample(sampleName, checkedValue === true)
+                                          }
+                                        />
+                                        <label
+                                          htmlFor={`contact-line-${sampleName}`}
+                                          className={`text-xs ${
+                                            hasPartner
+                                              ? "cursor-pointer"
+                                              : "cursor-not-allowed text-muted-foreground/50"
+                                          }`}
+                                        >
+                                          {sampleName}
+                                        </label>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             );
@@ -575,9 +643,11 @@ export const ContactAreaChart: React.FC<ContactAreaChartProps> = ({
                 ) : (
                   <div className="w-full py-12 flex items-center justify-center bg-muted/50 rounded-lg border border-dashed">
                     <p className="text-muted-foreground">
-                      {lineList.length === 0
-                        ? "Select samples to view contact-area trends"
-                        : "Select a contacted cell to display the line chart"}
+                      {!partnerCell
+                        ? "Select a contacted cell to begin"
+                        : lineList.length === 0
+                          ? "Select samples that contain this contacted cell"
+                          : "No contact-area data for the current selection"}
                     </p>
                   </div>
                 )}
