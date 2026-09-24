@@ -224,8 +224,13 @@ const LoadedEmbryoModel = ({
 
 
   // load {"CellNam":{"CellID":"","Fate":"","nucLoc":[146.5,68.5,51.5]}
+  // ContactNet only needs surface meshes + ConCells — skip EmbCDLoc / nucLoc.
   useEffect(() => {
-    if (!TP || !SM) return;
+    if (EmbMode === "ContactNet" || !TP || !SM) {
+      setCData(null);
+      setCDLoad("");
+      return;
+    }
     const controller = new AbortController();
     const fetchData = async () => {
       try {
@@ -244,7 +249,7 @@ const LoadedEmbryoModel = ({
     };
     fetchData();
     return () => controller.abort();
-  }, [SM, TP]);
+  }, [SM, TP, EmbMode]);
 
 
   // load reporter cell expression data
@@ -575,7 +580,7 @@ useEffect(() => {
 
   return (
     <>
-      {nucLocs.map((coord, index) => {
+      {EmbMode !== "ContactNet" && nucLocs.map((coord, index) => {
         const [x, y, z] = coord;
         let position;
         

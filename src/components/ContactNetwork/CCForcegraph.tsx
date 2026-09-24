@@ -46,7 +46,7 @@ const scaleExp = ColorScaler([0,1]);
 
 const DualExpColorScaler = (v: number) => {
   switch (v) {
-    case 0: return "grey";
+    case 0: return "white";
     case 1: return "blue";
     case 2: return "red";
     case 3: return "purple";
@@ -371,7 +371,7 @@ export const CCForcegraph: React.FC<Props> = ({
 
       if (isDualExp) {
         const dualItems = [
-          { color: "grey", label: "Neither" },
+          { color: "white", label: "Neither" },
           { color: "blue", label: gene1 },
           { color: "red", label: gene2 },
           { color: "purple", label: `${gene1} & ${gene2}` },
