@@ -14,23 +14,8 @@ import {
   SelectSeparator,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  SampleRange,
-  SMList,
-  SMGroupName,
-  TimeResolution,
-  SampleCellStage,
-  SampleCellRegion,
-} from "@/components/utils/usefulobject";
+import { SampleRange, SMList,SMGroupName } from "@/components/utils/usefulobject";
 import { API_BASE } from "@/components/utils/API_BASE";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -45,40 +30,6 @@ const EmbSAMItemTheme = "data-[highlighted]:bg-green-500/10 data-[highlighted]:t
 
 const MTLabelTheme = "text-pink-600 font-semibold text-xs uppercase tracking-wide";
 const MTItemTheme = "data-[highlighted]:bg-pink-500/10 data-[highlighted]:text-pink-700 data-[state=checked]:text-pink-600";
-
-type SMGroupKey = keyof typeof SMList;
-
-const SAMPLE_GROUP_ORDER: SMGroupKey[] = [
-  "Natural",
-  "NaturalF",
-  "Compress",
-  "CompressF",
-  "MT_lag1",
-  "MT_pop1",
-  "MT_wee",
-];
-
-const SAMPLE_GROUP_BLURB: Record<SMGroupKey, string> = {
-  Natural: "Wild-type C. elegans embryos imaged at standard temporal resolution.",
-  NaturalF: "Wild-type embryos imaged at high temporal resolution (~10 s per time point).",
-  Compress: "Embryos developing under mechanical compression.",
-  CompressF: "Mechanically compressed embryos imaged at high temporal resolution.",
-  MT_lag1: "Embryos with Notch signaling blocked (lag-1).",
-  MT_pop1: "Embryos with Wnt signaling blocked (pop-1).",
-  MT_wee: "Embryos with accelerated cell division (wee-1.1).",
-};
-
-const isFastImaging = (sample: string) =>
-  SMList.NaturalF.includes(sample) || SMList.CompressF.includes(sample);
-
-const formatTimeResolution = (sample: string) => {
-  const value = TimeResolution[sample as keyof typeof TimeResolution];
-  if (value == null) return "—";
-  return isFastImaging(sample) ? `${value} s/TP` : `${value} min/TP`;
-};
-
-const formatCount = (n: number | undefined) =>
-  n == null ? "—" : n.toLocaleString();
 // ─── Standalone SampleSelect component (defined OUTSIDE Download) ────────────
 
 interface SampleSelectProps {
@@ -549,195 +500,68 @@ const Download = () => {
         </div>
 
         {/* Data Format Information */}
-        <section className="mt-12 max-w-5xl mx-auto">
+        <section className="mt-12 max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold mb-4">Data format information</h2>
           <div className="space-y-6 text-muted-foreground">
             <div>
               <h3 className="font-semibold text-foreground mb-2">Sample information</h3>
-              <p className="mb-4 text-sm">
-                Embryos are organized into experimental condition groups. For each sample,
-                time resolution, total time points, last cell number (membrane-enclosed cells
-                at the final edited time point), and total cell number (cell-region observations
-                across all time points) are listed below. The full metadata spreadsheet is also
-                available via{" "}
-                <button
-                  type="button"
-                  className="text-primary underline underline-offset-2 hover:text-primary/80"
-                  onClick={() => (window.location.href = `${API_BASE}/Download/SampleInfo`)}
-                >
-                  Sample info (.xlsx)
-                </button>
-                .
-              </p>
-
-              <div className="space-y-8">
-                {SAMPLE_GROUP_ORDER.map((groupKey) => {
-                  const samples = SMList[groupKey];
-                  return (
-                    <div key={groupKey}>
-                      <div className="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                        <h4 className="font-semibold text-foreground">
-                          {SMGroupName[groupKey]}
-                        </h4>
-                        <span className="text-xs text-muted-foreground">
-                          {samples.length} sample{samples.length === 1 ? "" : "s"}
-                        </span>
-                      </div>
-                      <p className="mb-3 text-sm">{SAMPLE_GROUP_BLURB[groupKey]}</p>
-                      <div className="rounded-md border border-border/60 overflow-hidden bg-card/40">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="hover:bg-transparent">
-                              <TableHead className="h-9 px-3 text-xs">Sample</TableHead>
-                              <TableHead className="h-9 px-3 text-xs">Time resolution</TableHead>
-                              <TableHead className="h-9 px-3 text-xs text-right">Total time points</TableHead>
-                              <TableHead className="h-9 px-3 text-xs text-right">Last cell number</TableHead>
-                              <TableHead className="h-9 px-3 text-xs text-right">Total cell number</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {samples.map((sample) => (
-                              <TableRow key={sample}>
-                                <TableCell className="px-3 py-2 text-sm font-medium text-foreground">
-                                  {sample}
-                                </TableCell>
-                                <TableCell className="px-3 py-2 text-sm tabular-nums">
-                                  {formatTimeResolution(sample)}
-                                </TableCell>
-                                <TableCell className="px-3 py-2 text-sm text-right tabular-nums">
-                                  {formatCount(SampleRange[sample as keyof typeof SampleRange])}
-                                </TableCell>
-                                <TableCell className="px-3 py-2 text-sm text-right tabular-nums">
-                                  {formatCount(SampleCellStage[sample as keyof typeof SampleCellStage])}
-                                </TableCell>
-                                <TableCell className="px-3 py-2 text-sm text-right tabular-nums">
-                                  {formatCount(SampleCellRegion[sample as keyof typeof SampleCellRegion])}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="text-xs space-y-1">
+                <div><span className="font-semibold">CMap samples: </span>WT_Sample1 through WT_Sample8 — Wild-type <em>C. elegans</em> embryos (CMap8)</div>
+                <div><span className="font-semibold">CShaper samples: </span>Sample04 through Sample20 (CShaper17)</div>
+                <div><span className="font-semibold">Time points: </span>Range from 1 to 255 depending on sample (see metadata for exact range)</div>
+                <div><span className="font-semibold">Temporal resolution: </span>~1.5 minute per time point during early embryogenesis</div>
               </div>
             </div>
 
             <div>
               <h3 className="font-semibold text-foreground mb-2">Quantitative cell morphology feature</h3>
               <p className="mb-2">
-                Each sample&apos;s quantitative cell morphology feature (.csv) file contains one row per
-                cell at each developmental time point. Column names and meanings:
+                The quantitative cell morphology feature (.csv) file contains comprehensive cell information across developmental time points.
               </p>
-              <div className="bg-muted/50 p-3 rounded-md text-xs font-mono space-y-1.5 mb-2">
-                <div><span className="text-primary">Cell name: </span>Lineage identity of the cell (e.g., ABa, EMS)</div>
-                <div><span className="text-primary">Terminal fate: </span>Annotated terminal fate of the lineage; &quot;Unspecified&quot; when not assigned</div>
-                <div><span className="text-primary">Time point: </span>Edited imaging frame index within the sample</div>
-                <div><span className="text-primary">Cell volume (um3): </span>Cell volume (µm³)</div>
-                <div><span className="text-primary">Surface area (um2): </span>Cell membrane surface area (µm²)</div>
-                <div><span className="text-primary">Nuclei location X/Y/Z (um): </span>Nucleus coordinates (µm) in the embryo model space</div>
-                <div><span className="text-primary">Axis a/b/c (um): </span>Long, intermediate, and short principal-axis lengths (µm; a ≥ b ≥ c)</div>
-                <div><span className="text-primary">Contacted cells: </span>Names of cells in direct membrane contact, pipe-separated (e.g., ABp|EMS)</div>
-                <div><span className="text-primary">Contact area (um2): </span>Contact area (µm²) with each contacted cell, pipe-separated in the same order</div>
-                <div><span className="text-primary">General sphericity: </span>Equal-volume sphere surface area divided by cell surface area; approaches 1 for a sphere</div>
-                <div><span className="text-primary">Diameter sphericity: </span>Equal-volume sphere diameter divided by the longest axis length</div>
-                <div><span className="text-primary">Intercept sphericity: </span>Cube root of the volume ratio between the a–b–c ellipsoid and a sphere of diameter a</div>
-                <div><span className="text-primary">Maximum projection sphericity: </span>Equal-volume sphere projection area relative to the largest ellipsoid projection</div>
-                <div><span className="text-primary">Hayakawa roundness: </span>Volume-to-surface-area ratio normalized by the geometric mean of axis lengths; decreases with surface roughness</div>
-                <div><span className="text-primary">Spreading index: </span>General sphericity of the cell&apos;s convex hull; comparison with general sphericity reflects concavity</div>
-                <div><span className="text-primary">Elongation ratio: </span>Longest-to-intermediate axis ratio (a/b); higher values indicate elongation along a</div>
-                <div><span className="text-primary">Pivotability index: </span>Shortest-to-intermediate axis ratio (c/b); low values indicate thinness along c</div>
-                <div><span className="text-primary">Wilson flatness index: </span>Shortest-to-longest axis ratio (c/a); decreases for elongated or flattened cells</div>
-                <div><span className="text-primary">Hayakawa flatness ratio: </span>Mean of a and b divided by c; increases when thickness decreases relative to the other axes</div>
-                <div><span className="text-primary">Huang shape factor: </span>Mean of b and c divided by a; approaches 1 for equal axes</div>
-                <div><span className="text-primary">Corey shape factor: </span>c divided by the geometric mean of a and b; lower values indicate relative thinness and/or elongation</div>
-              </div>
-              <p className="text-xs">
-                Formulas and biological applications for the 12 morphology features are detailed on the{" "}
-                <a href="/Background#morphology-features" className="text-primary underline underline-offset-2 hover:text-primary/80">
-                  Background
-                </a>{" "}
-                page.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-foreground mb-2">Single-cell gene expression</h3>
-
-              <h4 className="font-medium text-foreground mb-1 text-sm">Fluorescence-based</h4>
-              <p className="mb-2 text-sm">
-                Available for Sample1–Sample8 and Sample11–Sample25 (Natural and
-                Mechanically-compressed embryos). Fast-imaging and mutant samples are not included.
-                Each sample (.csv) has one row per cell at each time point; remaining columns are
-                individual reporter measurements.
-              </p>
-              <div className="bg-muted/50 p-3 rounded-md text-xs font-mono space-y-1.5 mb-4">
-                <div><span className="text-primary">Cell name: </span>Lineage identity of the cell (e.g., ABa, EMS)</div>
-                <div><span className="text-primary">Time point: </span>Edited imaging frame index within the sample</div>
-                <div>
-                  <span className="text-primary">Reporter columns: </span>
-                  Named <span className="text-foreground">geneSymbol_Type_PaperID</span> (e.g.,{" "}
-                  <span className="text-foreground">acp-5_Promoter_7</span>,{" "}
-                  <span className="text-foreground">aha-1_Protein_5</span>), where Type is Promoter
-                  or Protein and PaperID refers to the source dictionary. Values are normalized
-                  expression levels.
-                </div>
-              </div>
-
-              <h4 className="font-medium text-foreground mb-1 text-sm">Sequencing-based</h4>
-              <p className="mb-2 text-sm">
-                A single matrix (.csv) of transcriptome-wide expression across lineage-resolved
-                cells. One row per cell; remaining columns are genes.
-              </p>
-              <div className="bg-muted/50 p-3 rounded-md text-xs font-mono space-y-1.5 mb-4">
-                <div><span className="text-primary">CellName: </span>Lineage identity of the cell (e.g., ABala, Epr)</div>
-                <div>
-                  <span className="text-primary">Gene columns: </span>
-                  WormBase gene IDs or gene symbols (e.g.,{" "}
-                  <span className="text-foreground">2L52.1</span>,{" "}
-                  <span className="text-foreground">hlh-1</span>,{" "}
-                  <span className="text-foreground">zyx-1</span>). Values are expression levels for
-                  that cell.
-                </div>
-              </div>
-
-              <h4 className="font-medium text-foreground mb-1 text-sm">Source dictionary</h4>
-              <p className="mb-2 text-sm">
-                The source dictionary (.xlsx) has two sheets that map fluorescence reporter columns
-                to publications:
-              </p>
-              <p className="mb-1 text-xs font-medium text-foreground">Gene Dictionary</p>
-              <div className="bg-muted/50 p-3 rounded-md text-xs font-mono space-y-1.5 mb-3">
-                <div><span className="text-primary">Gene: </span>Gene name/ID (e.g., acp-5, aha-1)</div>
-                <div><span className="text-primary">Paper ID: </span>Numeric ID linking to the Source Dictionary sheet</div>
-                <div><span className="text-primary">Fusion Type: </span>Promoter or Protein</div>
-                <div>
-                  <span className="text-primary">Gene Mark Name: </span>
-                  Column name used in the fluorescence CSV (e.g.,{" "}
-                  <span className="text-foreground">acp-5_Promoter_7</span>)
-                </div>
-                <div>
-                  <span className="text-primary">Replicates: </span>
-                  Number of CD-file replicates for this reporter
-                </div>
-              </div>
-              <p className="mb-1 text-xs font-medium text-foreground">Source Dictionary</p>
-              <div className="bg-muted/50 p-3 rounded-md text-xs font-mono space-y-1.5 mb-2">
-                <div><span className="text-primary">Paper ID: </span>Numeric reference ID</div>
-                <div><span className="text-primary">Title: </span>Publication title</div>
-                <div><span className="text-primary">DOI: </span>Publication DOI link</div>
+              <div className="bg-muted/50 p-3 rounded-md text-xs font-mono space-y-1 mb-2">
+                <div><span className="text-primary">Cell name: </span>Cell identity</div>
+                <div><span className="text-primary">Time point: </span>Imagine time frame number</div>
+                <div><span className="text-primary">Terminal fate: </span>Cell lineage terminal fate</div>
+                <div><span className="text-primary">Volume, Surface area: </span>Cell volume(µm³) and cell surface area(µm²),</div>
+                <div><span className="text-primary">Nuclei location X, Y, Z: </span>Nucleus location of this cell, relative to the whole cell model</div>
+                <div><span className="text-primary">Axis_a, b, c: </span>Cell axis length</div>
+                <div><span className="text-primary">Contacted cells, Contact area: </span>All cells with direct contact with this cells and the contacted area at this time point</div>
+                <div><span className="text-primary">General Sphericity...: </span>12 morphology features</div>
               </div>
             </div>
 
             <div>
-              <h3 className="font-semibold text-foreground mb-2">3D model</h3>
+              <h3 className="font-semibold text-foreground mb-2">3D model files</h3>
+              <p className="mb-2">3D object files(.obj) contain 3D geometry data of embryonic cells at specific time points.</p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-foreground mb-2">Gene expression</h3>
               <p className="mb-2">
-                3D models are Wavefront object files (.obj) of segmented embryonic cell meshes at a
-                chosen time point. Download a single time point, or a zip archive of all time points
-                for a sample.
+                Expression data contains normalized transcription factor(promoter and protein fusion) expression levels across developmental time points.
               </p>
+              <div className="bg-muted/50 p-3 rounded-md text-xs font-mono space-y-1 mb-2">
+                <div><span className="text-primary">Cell name, Time point: </span>Cell identity and time point</div>
+                <div><span className="text-primary">Gene: </span>The format is gene symbol + promoter/protein fusion + paper ID.</div>
+              </div>
+              {/* <p className="text-xs">
+                <span className="font-semibold">Example: </span>
+                &quot;AB&quot;, 0, 0.45; &quot;ABa&quot;, 1, 0.62
+              </p> */}
             </div>
+
+            <div>
+              <h3 className="font-semibold text-foreground mb-2">Expression metadata data</h3>
+              <p className="mb-2">Metadata file provides information about all florecene reporter gene expression data collected.</p>
+              <div className="bg-muted/50 p-3 rounded-md text-xs font-mono space-y-1 mb-2">
+                <div><span className="text-primary">Gene: </span>Gene name/ID (e.g., lin-39, elt-2)</div>
+                <div><span className="text-primary">Type: </span>Fusion type (promoter or protein)</div>
+                <div><span className="text-primary">PaperID: </span>Paper ID used for reference in EMERGE database</div>
+                <div><span className="text-primary">Source: </span>Publication DOI or reference link</div>
+              </div>
+            </div>
+
+            
 
             <div>
               <h3 className="font-semibold text-foreground mb-2">Citation</h3>
