@@ -7,6 +7,7 @@ import { Loader } from "lucide-react";
 import type { OrbitControls as OrbitControlsType } from "three-stdlib";
 import type { PerspectiveCamera as PerspectiveCameraType } from "three";
 import { API_BASE } from "@/components/utils/API_BASE";
+import { FlipYDirection } from "@/components/utils/usefulobject";
 
 const getOBJcenter = (m: THREE.Object3D) => {
   const box = new THREE.Box3().setFromObject(m);
@@ -79,8 +80,8 @@ const LoadedEmbryoModel = ({ SM, TP, CellName, Color, setLoading }: LoadedModelP
       if (child instanceof THREE.Mesh) {
         child.material = new THREE.MeshStandardMaterial({
           color: new THREE.Color(Color),
-          metalness: 0.5,
-          roughness: 0.5,
+          metalness: 0,
+          roughness: 0.55,
           side: THREE.DoubleSide,
         });
       }
@@ -189,12 +190,25 @@ export const OneCell = ({
           ref={cameraRef}
           makeDefault
           position={CameraPosi}
-        >
-          {/* Light moves with the camera so the facing side stays lit while orbiting */}
-          <directionalLight position={[2, 2, 4]} intensity={1} />
-        </PerspectiveCamera>
+          up={FlipYDirection[SM] ? [0, -1, 0] : [0, 1, 0]}
+        />
         <ZoomController zoom={zoom} initialZ={CameraPosi[2]} />
-        <ambientLight intensity={0.5} />
+
+        {/* Same lighting as EMBglb — world-space key / fill / rim */}
+        <ambientLight intensity={0.3} />
+        <directionalLight
+          position={FlipYDirection[SM] ? [80, -120, 80] : [80, 120, 80]}
+          intensity={1.2}
+        />
+        <directionalLight
+          position={FlipYDirection[SM] ? [-80, -40, -60] : [-80, 40, -60]}
+          intensity={0.7}
+        />
+        <directionalLight
+          position={FlipYDirection[SM] ? [0, -80, -100] : [0, 80, -100]}
+          intensity={0.9}
+        />
+
         <LoadedEmbryoModel
           SM={SM}
           TP={TP}

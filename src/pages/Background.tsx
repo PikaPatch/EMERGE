@@ -345,7 +345,7 @@ const morphologyFeatures: MorphologyFeatureRow[] = [
 
 const keyStats = [
   { value: "959", label: "Somatic cells", hint: (<>in the adult hermaphrodite<sup><a href="https://doi.org/10.1895/wormbook.1.177.1" className="text-primary hover:underline">7</a></sup></>) },
-  { value: "558", label: "Living cells at hatching", hint: (<>after 113 apoptotic cell deaths<sup><a href="https://www.ncbi.nlm.nih.gov/books/NBK20034/" className="text-primary hover:underline">8</a></sup></>) },
+  { value: "558", label: "Living cells at hatching", hint: (<>after 113 apoptotic cell deaths (in the hermaphrodite)<sup><a href="https://www.ncbi.nlm.nih.gov/books/NBK20034/" className="text-primary hover:underline">8</a></sup></>) },
   { value: "10–12 h", label: "Embryogenesis", hint: (<>at 20 °C<sup><a href="https://doi.org/10.1895/wormbook.1.177.1" className="text-primary hover:underline">9</a></sup></>) },
   { value: "~20 k", label: "Protein-coding genes", hint: (<>first genetically sequenced metazoan<sup><a href="https://doi.org/10.1126/science.282.5396.2012" className="text-primary hover:underline">10</a></sup></>) },
 ] as const;

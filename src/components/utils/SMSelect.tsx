@@ -261,7 +261,7 @@ export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
             {/* ── MT_lag Group ── */}
             <SelectGroup>
               <SelectLabel className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold text-pink-500 uppercase tracking-wider">
-                Notch-signaling-blocked
+                Notch-signaling-blocked (RNAi on gene <em className="italic normal-case">lag-1</em>)
                 <span className="ml-auto text-[10px] font-normal text-muted-foreground normal-case tracking-normal">
                   {SMList.MT_lag1.length} samples
                 </span>
@@ -293,7 +293,7 @@ export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
             {/* ── MT_pop Group ── */}
             <SelectGroup>
               <SelectLabel className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold text-pink-500 uppercase tracking-wider">
-                Wnt-signaling-blocked
+                Wnt-signaling-blocked (RNAi on gene <em className="italic normal-case">pop-1</em>)
                 <span className="ml-auto text-[10px] font-normal text-muted-foreground normal-case tracking-normal">
                   {SMList.MT_pop1.length} samples
                 </span>
@@ -325,7 +325,7 @@ export const SMSelect = ({ SM, setSM,setEmpty }: Props) => {
             {/* ── MT_wee Group ── */}
             <SelectGroup>
               <SelectLabel className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold text-pink-500 uppercase tracking-wider">
-                Cell-division-accelerated
+                Cell-division-accelerated (mutation on gene <em className="italic normal-case">wee-1.1</em>)
                 <span className="ml-auto text-[10px] font-normal text-muted-foreground normal-case tracking-normal">
                   {SMList.MT_wee.length} samples
                 </span>
