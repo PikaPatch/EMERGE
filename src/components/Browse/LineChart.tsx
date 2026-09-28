@@ -7,7 +7,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts';
 import { TimeResolutionS,FourCellList } from '@/components/utils/usefulobject'
@@ -126,7 +125,7 @@ const ChartData = useMemo(() => {
             </label>
           </div>
         <ResponsiveContainer width="100%" height={height}>
-          <LineChart data={ChartData} margin={{ top: 10, right: 30, left: 20, bottom: 30 }}>
+          <LineChart data={ChartData} margin={{ top: 10, right: 20, left: 20, bottom: 36 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="time"
@@ -157,10 +156,6 @@ const ChartData = useMemo(() => {
                 name
               ]}
             />
-            <Legend
-              verticalAlign="bottom"
-              wrapperStyle={{ paddingTop: 20 }}
-            />
             {LineList.map((sampleKey, idx) => (
               <Line
                 key={sampleKey}
@@ -174,6 +169,20 @@ const ChartData = useMemo(() => {
             ))}
           </LineChart>
         </ResponsiveContainer>
+        <div className="mt-1 flex flex-wrap justify-center gap-x-3 gap-y-1 max-h-16 overflow-y-auto px-2">
+          {LineList.map((sampleKey, idx) => (
+            <div
+              key={sampleKey}
+              className="flex items-center gap-1 text-[10px] leading-tight text-muted-foreground"
+            >
+              <span
+                className="inline-block h-0.5 w-3 shrink-0 rounded-sm"
+                style={{ backgroundColor: COLOR_PALETTE[idx % COLOR_PALETTE.length] }}
+              />
+              {sampleKey}
+            </div>
+          ))}
+        </div>
         </div>
       ) : (
         <div className="w-full h-64 flex items-center justify-center bg-muted/50 rounded-lg border border-dashed">

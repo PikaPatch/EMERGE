@@ -7,7 +7,9 @@ import {
   Line,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from 'recharts';
 
@@ -237,7 +239,8 @@ export const MLineChart: React.FC<MLineChartProps> = ({
             </label>
           </div>
         <ResponsiveContainer width="100%" height={height}>
-          <LineChart data={ChartData} margin={{ top: 10, right: 20, left: 20, bottom: 36 }}>
+          <LineChart data={ChartData} margin={{ top: 10, right: 30, left: 20, bottom: 50 }}>
+            <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="time"
               type="number"
@@ -272,6 +275,13 @@ export const MLineChart: React.FC<MLineChartProps> = ({
                 (value as number).toFixed(2),
                 refLabel(String(name)),
               ]}
+            />
+            <Legend
+              layout="vertical"
+              verticalAlign="middle"
+              align="right"
+              wrapperStyle={{ paddingLeft: 20 }}
+              formatter={(value) => refLabel(String(value))}
             />
             {MLineList.map((sampleKey, idx) => (
               <Line
@@ -312,38 +322,6 @@ export const MLineChart: React.FC<MLineChartProps> = ({
             )}
           </LineChart>
         </ResponsiveContainer>
-        <div className="mt-5 flex flex-wrap justify-center gap-x-3 gap-y-1 max-h-16 overflow-y-auto px-2">
-          {MLineList.map((sampleKey, idx) => (
-            <div
-              key={sampleKey}
-              className="flex items-center gap-1 text-[10px] leading-tight text-muted-foreground"
-            >
-              <span
-                className="inline-block h-0.5 w-3 shrink-0 rounded-sm"
-                style={{ backgroundColor: COLOR_PALETTE[idx % COLOR_PALETTE.length] }}
-              />
-              {sampleKey}
-            </div>
-          ))}
-          {hasPercentiles && (
-            <>
-              <div className="flex items-center gap-1 text-[10px] leading-tight text-muted-foreground">
-                <span
-                  className="inline-block h-0 w-3 shrink-0 border-t border-dashed"
-                  style={{ borderColor: "#64748b" }}
-                />
-                {Q25_LABEL}
-              </div>
-              <div className="flex items-center gap-1 text-[10px] leading-tight text-muted-foreground">
-                <span
-                  className="inline-block h-0 w-3 shrink-0 border-t border-dotted"
-                  style={{ borderColor: "#94a3b8" }}
-                />
-                {Q75_LABEL}
-              </div>
-            </>
-          )}
-        </div>
         </div>
       ) : null}
     </>
