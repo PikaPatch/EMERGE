@@ -551,7 +551,7 @@ const Introduction = () => {
                     and then laid into environment, where it completes embryonic development 
                     within ~10-12 hours at 20°C. During this period, a single cell undergoes 
                     a highly stereotyped cascade of proliferation, gastrulation, and morphogenesis 
-                    to produce a larva hermaphrodite with 558 living cells and 131 dead cells at hatching. 
+                    to produce a larva hermaphrodite with 558 living cells and 113 dead cells at hatching. 
                     The developed body contains multiple tissue/organ fates: skin, muscle, pharynx, neuron, 
                     intestine, and so on and so forth. 
                   </p>
@@ -860,14 +860,14 @@ This invariance and precision make it possible to record a 3D+time atlas of all 
                             <img
                               src={row.minShape}
                               alt={`Minimum ${row.feature} cell shape`}
-                              className="mx-auto aspect-square w-full max-w-[5.5rem] rounded-md bg-black object-contain"
+                              className="mx-auto aspect-square w-full max-w-[5.5rem] bg-card object-contain"
                             />
                           </TableCell>
                           <TableCell className="align-middle p-2">
                             <img
                               src={row.maxShape}
                               alt={`Maximum ${row.feature} cell shape`}
-                              className="mx-auto aspect-square w-full max-w-[5.5rem] rounded-md bg-black object-contain"
+                              className="mx-auto aspect-square w-full max-w-[5.5rem] bg-card object-contain"
                             />
                           </TableCell>
                           <TableCell className="align-top text-sm leading-relaxed text-foreground/90 break-words whitespace-normal">
