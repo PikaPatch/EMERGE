@@ -119,6 +119,8 @@ type MorphologyFeatureRow = {
   formula: React.ReactNode;
   minShape: string;
   maxShape: string;
+  minValue: string;
+  maxValue: string;
   description: string;
   applications: React.ReactNode;
 };
@@ -136,6 +138,8 @@ const morphologyFeatures: MorphologyFeatureRow[] = [
     ),
     minShape: "/img/intro/shapes/general-sphericity-min.png",
     maxShape: "/img/intro/shapes/general-sphericity-max.png",
+    minValue: "0.59",
+    maxValue: "0.82",
     description:
       "Surface area of an equal-volume sphere divided by the cell surface area. Values approach 1 for a sphere and decrease when the surface becomes more irregular.",
     applications: (
@@ -159,6 +163,8 @@ const morphologyFeatures: MorphologyFeatureRow[] = [
     ),
     minShape: "/img/intro/shapes/diameter-sphericity-min.png",
     maxShape: "/img/intro/shapes/diameter-sphericity-max.png",
+    minValue: "0.57",
+    maxValue: "0.89",
     description:
       "Diameter of an equal-volume sphere divided by the longest axis length. Lower values indicate less volume relative to longitudinal extent, where the spherical reference is 1.",
     applications: (
@@ -174,6 +180,8 @@ const morphologyFeatures: MorphologyFeatureRow[] = [
     formula: <Cuberoot><Frac num={<><i>bc</i></>} den={<><i>a</i><sup>2</sup></>} /></Cuberoot>,
     minShape: "/img/intro/shapes/intercept-sphericity-min.png",
     maxShape: "/img/intro/shapes/intercept-sphericity-max.png",
+    minValue: "0.63",
+    maxValue: "1.00",
     description:
       "Cube root of the volume ratio between an ellipsoid with full axis lengths a, b and c and a sphere of diameter a. Values approach 1 for equal axes and decrease with axis inequality.",
     applications: (
@@ -189,6 +197,8 @@ const morphologyFeatures: MorphologyFeatureRow[] = [
     formula: <Cuberoot><Frac num={<><i>c</i><sup>2</sup></>} den={<><i>ab</i></>} /></Cuberoot>,
     minShape: "/img/intro/shapes/maximum-projection-sphericity-min.png",
     maxShape: "/img/intro/shapes/maximum-projection-sphericity-max.png",
+    minValue: "0.66",
+    maxValue: "0.93",
     description:
       "The equal-volume sphere projection area divided by the largest ellipsoid projection area, with a two-thirds power. Values approach 1 for equal axes and decrease with relative thinness.",
     applications: (
@@ -217,6 +227,8 @@ const morphologyFeatures: MorphologyFeatureRow[] = [
     ),
     minShape: "/img/intro/shapes/hayakawa-roundness-min.png",
     maxShape: "/img/intro/shapes/hayakawa-roundness-max.png",
+    minValue: "0.08",
+    maxValue: "0.13",
     description:
       "Volume-to-surface-area ratio normalized by the geometric mean of the three axis lengths. A sphere gives 1/6, while the value decreases as the surface of the object becomes rougher.",
     applications: (
@@ -252,6 +264,8 @@ const morphologyFeatures: MorphologyFeatureRow[] = [
     ),
     minShape: "/img/intro/shapes/spreading-index-min.png",
     maxShape: "/img/intro/shapes/spreading-index-max.png",
+    minValue: "0.82",
+    maxValue: "0.95",
     description:
       "General sphericity calculated for the convex hull of the original object. A spherical hull gives 1, and comparing General Sphericity with Spreading Index reveals geometric concavity and convexity.",
     applications: (
@@ -269,6 +283,8 @@ const morphologyFeatures: MorphologyFeatureRow[] = [
     formula: <Frac num={<i>a</i>} den={<i>b</i>} />,
     minShape: "/img/intro/shapes/elongation-ratio-min.png",
     maxShape: "/img/intro/shapes/elongation-ratio-max.png",
+    minValue: "1.01",
+    maxValue: "3.95",
     description:
       "Longest-to-intermediate axis ratio. Increasing values indicate preferential extension along the longest axis.",
     applications: (
@@ -287,6 +303,8 @@ const morphologyFeatures: MorphologyFeatureRow[] = [
     formula: <Frac num={<i>c</i>} den={<i>b</i>} />,
     minShape: "/img/intro/shapes/pivotability-index-min.png",
     maxShape: "/img/intro/shapes/pivotability-index-max.png",
+    minValue: "0.48",
+    maxValue: "1.00",
     description:
       "Shortest-to-intermediate axis ratio. Low values indicate a thin third dimension relative to the intermediate axis. Values near 1 occur in a perfect sphere or elongated rod-like shapes.",
     applications: (
@@ -304,6 +322,8 @@ const morphologyFeatures: MorphologyFeatureRow[] = [
     formula: <Frac num={<i>c</i>} den={<i>a</i>} />,
     minShape: "/img/intro/shapes/wilson-flatness-index-min.png",
     maxShape: "/img/intro/shapes/wilson-flatness-index-max.png",
+    minValue: "0.40",
+    maxValue: "0.86",
     description:
       "Shortest-to-longest axis ratio. Values decrease in both elongated and flattened cells.",
     applications: (
@@ -319,6 +339,8 @@ const morphologyFeatures: MorphologyFeatureRow[] = [
     formula: <Frac num={<><i>a</i>+<i>b</i></>} den={<>2<i>c</i></>} />,
     minShape: "/img/intro/shapes/hayakawa-flatness-ratio-min.png",
     maxShape: "/img/intro/shapes/hayakawa-flatness-ratio-max.png",
+    minValue: "1.12",
+    maxValue: "2.23",
     description:
       "Mean of the longest and intermediate axis lengths divided by the shortest. Values increase when thickness decreases relative to the other axes.",
     applications: (
@@ -334,6 +356,8 @@ const morphologyFeatures: MorphologyFeatureRow[] = [
     formula: <Frac num={<><i>b</i>+<i>c</i></>} den={<>2<i>a</i></>} />,
     minShape: "/img/intro/shapes/huang-shape-factor-min.png",
     maxShape: "/img/intro/shapes/huang-shape-factor-max.png",
+    minValue: "0.51",
+    maxValue: "0.90",
     description:
       "Mean of the intermediate and shortest axis lengths divided by the longest. Values approach 1 for equal axes and decrease with dominance of the longest axis.",
     applications: (
@@ -358,6 +382,8 @@ const morphologyFeatures: MorphologyFeatureRow[] = [
     ),
     minShape: "/img/intro/shapes/corey-shape-factor-min.png",
     maxShape: "/img/intro/shapes/corey-shape-factor-max.png",
+    minValue: "0.45",
+    maxValue: "0.89",
     description:
       "Shortest axis divided by the geometric mean of the longest and intermediate axes, reflecting axis anisotropy. Values near 1 indicate similar axis lengths; lower values indicate relative thinness and/or elongation.",
     applications: (
@@ -857,18 +883,28 @@ This invariance and precision make it possible to record a 3D+time atlas of all 
                             {row.formula}
                           </TableCell>
                           <TableCell className="align-middle p-2">
-                            <img
-                              src={row.minShape}
-                              alt={`Minimum ${row.feature} cell shape`}
-                              className="mx-auto aspect-square w-full max-w-[5.5rem] bg-card object-contain"
-                            />
+                            <div className="mx-auto flex w-full max-w-[5.5rem] flex-col items-center gap-1">
+                              <img
+                                src={row.minShape}
+                                alt={`Minimum ${row.feature} cell shape`}
+                                className="aspect-square w-full bg-card object-contain"
+                              />
+                              <span className="text-xs font-medium tabular-nums text-foreground">
+                                {row.minValue}
+                              </span>
+                            </div>
                           </TableCell>
                           <TableCell className="align-middle p-2">
-                            <img
-                              src={row.maxShape}
-                              alt={`Maximum ${row.feature} cell shape`}
-                              className="mx-auto aspect-square w-full max-w-[5.5rem] bg-card object-contain"
-                            />
+                            <div className="mx-auto flex w-full max-w-[5.5rem] flex-col items-center gap-1">
+                              <img
+                                src={row.maxShape}
+                                alt={`Maximum ${row.feature} cell shape`}
+                                className="aspect-square w-full bg-card object-contain"
+                              />
+                              <span className="text-xs font-medium tabular-nums text-foreground">
+                                {row.maxValue}
+                              </span>
+                            </div>
                           </TableCell>
                           <TableCell className="align-top text-sm leading-relaxed text-foreground/90 break-words whitespace-normal">
                             {row.description}
