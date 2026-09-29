@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,14 +58,14 @@ const SAMPLE_GROUP_ORDER: SMGroupKey[] = [
   "MT_wee",
 ];
 
-const SAMPLE_GROUP_BLURB: Record<SMGroupKey, string> = {
-  Natural: "Wild-type C. elegans embryos imaged at standard temporal resolution.",
+const SAMPLE_GROUP_BLURB: Record<SMGroupKey, ReactNode> = {
+  Natural: <>Wild-type <em>C. elegans</em> embryos imaged at standard temporal resolution.</>,
   NaturalF: "Wild-type embryos imaged at high temporal resolution (~10 s per time point).",
   Compress: "Embryos developing under mechanical compression.",
-  CompressF: "Mechanically compressed embryos imaged at high temporal resolution.",
-  MT_lag1: "Embryos with Notch signaling blocked (lag-1).",
-  MT_pop1: "Embryos with Wnt signaling blocked (pop-1).",
-  MT_wee: "Embryos with accelerated cell division (wee-1.1).",
+  CompressF: "Mechanically-compressed embryos imaged at high temporal resolution.",
+  MT_lag1: <>Embryos with Notch signaling blocked (<em>lag-1</em>).</>,
+  MT_pop1: <>Embryos with Wnt signaling blocked (<em>pop-1</em>).</>,
+  MT_wee: <>Embryos with accelerated cell division (<em>wee-1.1</em>).</>,
 };
 
 const isFastImaging = (sample: string) =>
@@ -144,7 +144,7 @@ const SampleSelect = ({ value, Expression = false, onChange }: SampleSelectProps
         <SelectSeparator />
 
         <SelectGroup>
-          <SelectLabel className={MTLabelTheme}>Notch-signaling-blocked (lag-1)</SelectLabel>
+          <SelectLabel className={MTLabelTheme}>Notch-signaling-blocked (<em className="italic normal-case">lag-1</em>)</SelectLabel>
           {SMList.MT_lag1.map((s) => (
             <SelectItem key={s} value={s} className={MTItemTheme} disabled={Expression}>
               {s}
@@ -154,7 +154,7 @@ const SampleSelect = ({ value, Expression = false, onChange }: SampleSelectProps
         <SelectSeparator />
 
         <SelectGroup>
-          <SelectLabel className={MTLabelTheme}>Wnt-signaling-blocked (pop-1)</SelectLabel>
+          <SelectLabel className={MTLabelTheme}>Wnt-signaling-blocked (<em className="italic normal-case">pop-1</em>)</SelectLabel>
           {SMList.MT_pop1.map((s) => (
             <SelectItem key={s} value={s} className={MTItemTheme} disabled={Expression}>
               {s}
@@ -164,7 +164,7 @@ const SampleSelect = ({ value, Expression = false, onChange }: SampleSelectProps
         <SelectSeparator />
 
         <SelectGroup>
-          <SelectLabel className={MTLabelTheme}>Cell-division-accelerated (wee-1.1)</SelectLabel>
+          <SelectLabel className={MTLabelTheme}>Cell-division-accelerated (<em className="italic normal-case">wee-1.1</em>)</SelectLabel>
           {SMList.MT_wee.map((s) => (
             <SelectItem key={s} value={s} className={MTItemTheme} disabled={Expression}>
               {s}
@@ -631,14 +631,14 @@ const Download = () => {
                 cell at each developmental time point. Column names and meanings:
               </p>
               <div className="bg-muted/50 p-3 rounded-md text-xs font-mono space-y-1.5 mb-2">
-                <div><span className="text-primary">Cell name: </span>Lineage identity of the cell (e.g., ABa, EMS)</div>
+                <div><span className="text-primary">Cell name: </span>Lineage identity of the cell (<em>e.g.</em>, ABa, EMS)</div>
                 <div><span className="text-primary">Terminal fate: </span>Annotated terminal fate of the lineage; &quot;Unspecified&quot; when not assigned</div>
                 <div><span className="text-primary">Time point: </span>Edited imaging frame index within the sample</div>
                 <div><span className="text-primary">Cell volume (um3): </span>Cell volume (µm³)</div>
                 <div><span className="text-primary">Surface area (um2): </span>Cell membrane surface area (µm²)</div>
                 <div><span className="text-primary">Nuclei location X/Y/Z (um): </span>Nucleus coordinates (µm) in the embryo model space</div>
                 <div><span className="text-primary">Axis a/b/c (um): </span>Long, intermediate, and short principal-axis lengths (µm; a ≥ b ≥ c)</div>
-                <div><span className="text-primary">Contacted cells: </span>Names of cells in direct membrane contact, pipe-separated (e.g., ABp|EMS)</div>
+                <div><span className="text-primary">Contacted cells: </span>Names of cells in direct membrane contact, pipe-separated (<em>e.g.</em>, ABp|EMS)</div>
                 <div><span className="text-primary">Contact area (um2): </span>Contact area (µm²) with each contacted cell, pipe-separated in the same order</div>
                 <div><span className="text-primary">General sphericity: </span>Equal-volume sphere surface area divided by cell surface area; approaches 1 for a sphere</div>
                 <div><span className="text-primary">Diameter sphericity: </span>Equal-volume sphere diameter divided by the longest axis length</div>
@@ -673,13 +673,13 @@ const Download = () => {
                 individual reporter measurements.
               </p>
               <div className="bg-muted/50 p-3 rounded-md text-xs font-mono space-y-1.5 mb-4">
-                <div><span className="text-primary">Cell name: </span>Lineage identity of the cell (e.g., ABa, EMS)</div>
+                <div><span className="text-primary">Cell name: </span>Lineage identity of the cell (<em>e.g.</em>, ABa, EMS)</div>
                 <div><span className="text-primary">Time point: </span>Edited imaging frame index within the sample</div>
                 <div>
                   <span className="text-primary">Reporter columns: </span>
-                  Named <span className="text-foreground">geneSymbol_Type_PaperID</span> (e.g.,{" "}
-                  <span className="text-foreground">acp-5_Promoter_7</span>,{" "}
-                  <span className="text-foreground">aha-1_Protein_5</span>), where Type is Promoter
+                  Named <span className="text-foreground">geneSymbol_Type_PaperID</span> (<em>e.g.</em>,{" "}
+                  <span className="text-foreground"><em>acp-5</em>_Promoter_7</span>,{" "}
+                  <span className="text-foreground"><em>aha-1</em>_Protein_5</span>), where Type is Promoter
                   or Protein and PaperID refers to the source dictionary. Values are normalized
                   expression levels.
                 </div>
@@ -691,13 +691,13 @@ const Download = () => {
                 cells. One row per cell; remaining columns are genes.
               </p>
               <div className="bg-muted/50 p-3 rounded-md text-xs font-mono space-y-1.5 mb-4">
-                <div><span className="text-primary">CellName: </span>Lineage identity of the cell (e.g., ABala, Epr)</div>
+                <div><span className="text-primary">CellName: </span>Lineage identity of the cell (<em>e.g.</em>, ABala, Epr)</div>
                 <div>
                   <span className="text-primary">Gene columns: </span>
-                  WormBase gene IDs or gene symbols (e.g.,{" "}
+                  WormBase gene IDs or gene symbols (<em>e.g.</em>,{" "}
                   <span className="text-foreground">2L52.1</span>,{" "}
-                  <span className="text-foreground">hlh-1</span>,{" "}
-                  <span className="text-foreground">zyx-1</span>). Values are expression levels for
+                  <span className="text-foreground"><em>hlh-1</em></span>,{" "}
+                  <span className="text-foreground"><em>zyx-1</em></span>). Values are expression levels for
                   that cell.
                 </div>
               </div>
@@ -709,13 +709,13 @@ const Download = () => {
               </p>
               <p className="mb-1 text-xs font-medium text-foreground">Gene Dictionary</p>
               <div className="bg-muted/50 p-3 rounded-md text-xs font-mono space-y-1.5 mb-3">
-                <div><span className="text-primary">Gene: </span>Gene name/ID (e.g., acp-5, aha-1)</div>
+                <div><span className="text-primary">Gene: </span>Gene name/ID (<em>e.g.</em>, <em>acp-5</em>, <em>aha-1</em>)</div>
                 <div><span className="text-primary">Paper ID: </span>Numeric ID linking to the Source Dictionary sheet</div>
                 <div><span className="text-primary">Fusion Type: </span>Promoter or Protein</div>
                 <div>
                   <span className="text-primary">Gene Mark Name: </span>
-                  Column name used in the fluorescence CSV (e.g.,{" "}
-                  <span className="text-foreground">acp-5_Promoter_7</span>)
+                  Column name used in the fluorescence CSV (<em>e.g.</em>,{" "}
+                  <span className="text-foreground"><em>acp-5</em>_Promoter_7</span>)
                 </div>
                 <div>
                   <span className="text-primary">Replicates: </span>
