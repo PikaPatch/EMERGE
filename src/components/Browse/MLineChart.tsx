@@ -20,8 +20,15 @@ const COLOR_PALETTE = [
 
 const MEAN_KEY = "Mean";
 const MEDIAN_KEY = "Median";
+const Q25_KEY = "Q25";
+const Q75_KEY = "Q75";
+const Q25_LABEL = "25%";
+const Q75_LABEL = "75%";
+
 const MEAN_COLOR = "#64748b";
 const MEDIAN_COLOR = "#94a3b8";
+const Q25_COLOR = "#a78bfa";
+const Q75_COLOR = "#c4b5fd";
 
 function meanOf(vals: number[]): number {
   return vals.reduce((s, v) => s + v, 0) / vals.length;
@@ -32,6 +39,15 @@ function medianOf(sorted: number[]): number {
   return sorted.length % 2 !== 0
     ? sorted[mid]
     : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 1) return sorted[0];
+  const idx = (sorted.length - 1) * p;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
 
 interface MLineChartProps {
@@ -76,10 +92,11 @@ export const MLineChart: React.FC<MLineChartProps> = ({
   const [monotone, setMonotone] = useState(false);
   const [showMean, setShowMean] = useState(false);
   const [showMedian, setShowMedian] = useState(false);
+  const [showPercentiles, setShowPercentiles] = useState(false);
   const YAxisTitle = Shapefac[DataName];
   const line_width = 2;
   const lineType = monotone ? "monotone" : "linear";
-  const needLineX = showMean || showMedian;
+  const needLineX = showMean || showMedian || showPercentiles;
 
   useEffect(() => {
     if (!CellName) {
@@ -102,7 +119,7 @@ export const MLineChart: React.FC<MLineChartProps> = ({
     fetchData();
   }, [CellName, DataName]);
 
-  // Only fetch all-cell LineX when Mean and/or Median is enabled
+  // Only fetch all-cell LineX when Mean / Median / 25–75% is enabled
   useEffect(() => {
     if (!needLineX || !CellName || !DataName) {
       setLineXData(null);
@@ -152,7 +169,7 @@ export const MLineChart: React.FC<MLineChartProps> = ({
       });
     }
 
-    // Mean / median from all cells (LineX), pooled across samples at each chart time
+    // Stats from all cells (LineX), pooled across samples at each chart time
     if (needLineX && LineXData) {
       for (const row of timeMap.values()) {
         const t = row.time as number;
@@ -163,9 +180,13 @@ export const MLineChart: React.FC<MLineChartProps> = ({
         }
         if (vals.length === 0) continue;
         if (showMean) row[MEAN_KEY] = meanOf(vals);
-        if (showMedian) {
+        if (showMedian || showPercentiles) {
           vals.sort((a, b) => a - b);
-          row[MEDIAN_KEY] = medianOf(vals);
+          if (showMedian) row[MEDIAN_KEY] = medianOf(vals);
+          if (showPercentiles) {
+            row[Q25_KEY] = percentile(vals, 0.25);
+            row[Q75_KEY] = percentile(vals, 0.75);
+          }
         }
       }
     }
@@ -173,12 +194,21 @@ export const MLineChart: React.FC<MLineChartProps> = ({
     return Array.from(timeMap.values()).sort(
       (a, b) => (a.time as number) - (b.time as number)
     );
-  }, [LineData, MLineList, needLineX, showMean, showMedian, LineXData]);
+  }, [LineData, MLineList, needLineX, showMean, showMedian, showPercentiles, LineXData]);
 
   const hasMean =
     showMean && ChartData.some((row) => typeof row[MEAN_KEY] === "number");
   const hasMedian =
     showMedian && ChartData.some((row) => typeof row[MEDIAN_KEY] === "number");
+  const hasPercentiles =
+    showPercentiles &&
+    ChartData.some(
+      (row) =>
+        typeof row[Q25_KEY] === "number" && typeof row[Q75_KEY] === "number"
+    );
+
+  const refLabel = (name: string) =>
+    name === Q25_KEY ? Q25_LABEL : name === Q75_KEY ? Q75_LABEL : name;
 
   const YRange = useMemo<[number, number] | ["auto", "auto"]>(() => {
     if (!LineData) return ["auto", "auto"];
@@ -193,10 +223,14 @@ export const MLineChart: React.FC<MLineChartProps> = ({
       .flat()
       .filter((v) => typeof v === "number" && Number.isFinite(v));
 
-    if (hasMean || hasMedian) {
+    if (hasMean || hasMedian || hasPercentiles) {
       for (const row of ChartData) {
         if (hasMean && typeof row[MEAN_KEY] === "number") allValues.push(row[MEAN_KEY]);
         if (hasMedian && typeof row[MEDIAN_KEY] === "number") allValues.push(row[MEDIAN_KEY]);
+        if (hasPercentiles) {
+          if (typeof row[Q25_KEY] === "number") allValues.push(row[Q25_KEY]);
+          if (typeof row[Q75_KEY] === "number") allValues.push(row[Q75_KEY]);
+        }
       }
     }
 
@@ -207,7 +241,7 @@ export const MLineChart: React.FC<MLineChartProps> = ({
     const padding = (max - min) * 0.1 || 0.05;
 
     return [min - padding, max + padding];
-  }, [LineData, MLineList, ChartData, hasMean, hasMedian]);
+  }, [LineData, MLineList, ChartData, hasMean, hasMedian, hasPercentiles]);
 
   return (
     <>
@@ -235,6 +269,17 @@ export const MLineChart: React.FC<MLineChartProps> = ({
                 onCheckedChange={(checked) => setShowMedian(checked === true)}
               />
               Median
+            </label>
+            <label
+              htmlFor="percentiles-shape"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none"
+            >
+              <Checkbox
+                id="percentiles-shape"
+                checked={showPercentiles}
+                onCheckedChange={(checked) => setShowPercentiles(checked === true)}
+              />
+              25–75%
             </label>
             <label
               htmlFor="monotone-shape"
@@ -282,7 +327,7 @@ export const MLineChart: React.FC<MLineChartProps> = ({
               )}
               formatter={(value, name) => [
                 (value as number).toFixed(2),
-                String(name),
+                refLabel(String(name)),
               ]}
             />
             {MLineList.map((sampleKey, idx) => (
@@ -322,6 +367,32 @@ export const MLineChart: React.FC<MLineChartProps> = ({
                 legendType="plainline"
               />
             )}
+            {hasPercentiles && (
+              <>
+                <Line
+                  type={lineType}
+                  dataKey={Q25_KEY}
+                  name={Q25_KEY}
+                  stroke={Q25_COLOR}
+                  strokeDasharray="4 3"
+                  strokeWidth={2}
+                  dot={false}
+                  connectNulls
+                  legendType="plainline"
+                />
+                <Line
+                  type={lineType}
+                  dataKey={Q75_KEY}
+                  name={Q75_KEY}
+                  stroke={Q75_COLOR}
+                  strokeDasharray="4 3"
+                  strokeWidth={2}
+                  dot={false}
+                  connectNulls
+                  legendType="plainline"
+                />
+              </>
+            )}
           </LineChart>
         </ResponsiveContainer>
         <div className="mt-5 flex flex-wrap justify-center gap-x-3 gap-y-1 max-h-16 overflow-y-auto px-2">
@@ -354,6 +425,24 @@ export const MLineChart: React.FC<MLineChartProps> = ({
               />
               Median
             </div>
+          )}
+          {hasPercentiles && (
+            <>
+              <div className="flex items-center gap-1 text-[10px] leading-tight text-muted-foreground">
+                <span
+                  className="inline-block h-0 w-3 shrink-0 border-t border-dashed"
+                  style={{ borderColor: Q25_COLOR }}
+                />
+                {Q25_LABEL}
+              </div>
+              <div className="flex items-center gap-1 text-[10px] leading-tight text-muted-foreground">
+                <span
+                  className="inline-block h-0 w-3 shrink-0 border-t border-dashed"
+                  style={{ borderColor: Q75_COLOR }}
+                />
+                {Q75_LABEL}
+              </div>
+            </>
           )}
         </div>
         </div>

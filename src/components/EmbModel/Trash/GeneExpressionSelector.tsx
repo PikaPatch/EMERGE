@@ -355,29 +355,26 @@ useEffect(() => {
 
           {/* Dataset for Gene1 */}
           {Gene && ReporterGIDList && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-sm font-medium">Dataset</Label>
-              <RadioGroup value={GID} onValueChange={setGID} className="gap-1">
+              <RadioGroup value={GID} onValueChange={setGID} className="gap-1.5">
                 {ReporterGIDList.map((gdata, idx) => (
                   <label
                     key={gdata.ExpColName}
                     htmlFor={gdata.ExpColName}
-                    className={`flex items-start gap-1.5 px-2 py-1 rounded border cursor-pointer transition-all text-[11px] leading-tight ${
+                    className={`flex items-center gap-2 px-2.5 py-2 rounded-md border cursor-pointer transition-all text-xs ${
                       GID === gdata.ExpColName ? "border-primary bg-primary/10" : "border-border hover:border-primary/50 hover:bg-muted/50"
                     }`}
                   >
-                    <RadioGroupItem value={gdata.ExpColName} id={gdata.ExpColName} className="shrink-0 h-3 w-3 mt-0.5" />
-                    <div className="flex-1 min-w-0 flex flex-col gap-0.5 w-full">
-                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 w-full min-w-0">
+                    <RadioGroupItem value={gdata.ExpColName} id={gdata.ExpColName} className="shrink-0 h-3.5 w-3.5" />
+                    <div className="flex-1 min-w-0 flex flex-col gap-1 w-full">
+                      <div className="flex items-center justify-between gap-2 w-full min-w-0">
                         <span className="font-medium flex-shrink-0">#{idx + 1}</span>
-                        <span className="text-muted-foreground">TP {gdata.min}-{gdata.max}</span>
-                        <span className="text-muted-foreground">|</span>
-                        <span className="text-muted-foreground">{gdata.FusionType} fusion</span>
-                        <span className="text-muted-foreground">|</span>
-                        <span className="text-muted-foreground">Sample number={gdata.Replicates}</span>
+                        <span className="text-muted-foreground truncate flex-1 min-w-0">TP {gdata.min}-{gdata.max}</span>
+                        <span className="text-muted-foreground truncate flex-shrink-0">{gdata.FusionType}</span>
                       </div>
                       {gdata.PaperID && (
-                        <span className="text-primary break-all text-[10px] w-full block min-w-0 leading-tight">
+                        <span className="text-primary break-all text-xs w-full block min-w-0">
                           Source: {PaperList[gdata.PaperID].DOI}
                         </span>
                       )}
@@ -449,31 +446,26 @@ useEffect(() => {
 
               {/* Dataset for Gene2 */}
               {Gene2 && ReporterGID2List && (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label className="text-sm font-medium">Dataset</Label>
-                  <RadioGroup value={GID2} onValueChange={setGID2} className="gap-1">
+                  <RadioGroup value={GID2} onValueChange={setGID2} className="gap-1.5">
                     {ReporterGID2List.map((gdata, idx) => (
                       <label
                         key={gdata.ExpColName}
                         htmlFor={`gene2-${gdata.ExpColName}`}
-                        className={`flex items-start gap-1.5 px-2 py-1 rounded border cursor-pointer transition-all text-[11px] leading-tight ${
+                        className={`flex items-center gap-2 px-2.5 py-2 rounded-md border cursor-pointer transition-all text-xs ${
                           GID2 === gdata.ExpColName ? "border-primary bg-primary/10" : "border-border hover:border-primary/50 hover:bg-muted/50"
                         }`}
                       >
-                        <RadioGroupItem value={gdata.ExpColName} id={`gene2-${gdata.ExpColName}`} className="shrink-0 h-3 w-3 mt-0.5" />
-                        <div className="flex-1 min-w-0 flex flex-col gap-0.5 w-full">
-                          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 w-full min-w-0">
+                        <RadioGroupItem value={gdata.ExpColName} id={`gene2-${gdata.ExpColName}`} className="shrink-0 h-3.5 w-3.5" />
+                        <div className="flex-1 min-w-0 flex flex-col gap-1 w-full">
+                          <div className="flex items-center justify-between gap-2 w-full min-w-0">
                             <span className="font-medium flex-shrink-0">#{idx + 1}</span>
-                            <span className="text-muted-foreground">TP {gdata.min}-{gdata.max}</span>
-                            <span className="text-muted-foreground">|</span>
-                            <span className="text-muted-foreground">{gdata.FusionType} fusion</span>
-                            <span className="text-muted-foreground">|</span>
-                            <span className="text-muted-foreground">Sample number={gdata.Replicates}</span>
+                            <span className="text-muted-foreground truncate flex-1 min-w-0">TP {gdata.min}-{gdata.max}</span>
+                            <span className="text-muted-foreground truncate flex-shrink-0">{gdata.FusionType}</span>
                           </div>
                           {gdata.PaperID && (
-                            <span className="text-primary break-words text-[10px] w-full block min-w-0 leading-tight">
-                              Source: {PaperList[gdata.PaperID].SourceName}
-                            </span>
+                            <span className="text-primary break-words text-xs w-full block min-w-0">Source: {PaperList[gdata.PaperID].SourceName}</span>
                           )}
                         </div>
                       </label>
