@@ -550,7 +550,7 @@ const Download = () => {
 
         {/* Data Format Information */}
         <section className="mt-12 max-w-5xl mx-auto">
-          <h2 className="text-2xl font-bold mb-4">Data format information</h2>
+          <h2 className="text-2xl font-bold mb-4">Readme</h2>
           <div className="space-y-6 text-muted-foreground">
             <div>
               <h3 className="font-semibold text-foreground mb-2">Sample information</h3>
@@ -636,7 +636,13 @@ const Download = () => {
                 <div><span className="text-primary">Time point: </span>Edited imaging frame index within the sample</div>
                 <div><span className="text-primary">Cell volume (um3): </span>Cell volume (µm³)</div>
                 <div><span className="text-primary">Surface area (um2): </span>Cell membrane surface area (µm²)</div>
-                <div><span className="text-primary">Nuclei location X/Y/Z (um): </span>Nucleus coordinates (µm) in the embryo model space</div>
+                <div>
+                  <span className="text-primary">Nuclei location X/Y/Z (um): </span>
+                  Nuclear coordinates (µm) in the embryo model space, rather than the centroid of
+                  the segmented cell volume. During division, a membrane-defined cell region may
+                  contain two daughter nuclei before cytokinesis is complete; in these cases, a
+                  single nuclear coordinate is not assigned.
+                </div>
                 <div><span className="text-primary">Axis a/b/c (um): </span>Long, intermediate, and short principal-axis lengths (µm; a ≥ b ≥ c)</div>
                 <div><span className="text-primary">Contacted cells: </span>Names of cells in direct membrane contact, pipe-separated (<em>e.g.</em>, ABp|EMS)</div>
                 <div><span className="text-primary">Contact area (um2): </span>Contact area (µm²) with each contacted cell, pipe-separated in the same order</div>
@@ -681,7 +687,12 @@ const Download = () => {
                   <span className="text-foreground"><em>acp-5</em>_Promoter_7</span>,{" "}
                   <span className="text-foreground"><em>aha-1</em>_Protein_5</span>), where Type is Promoter
                   or Protein and PaperID refers to the source dictionary. Values are normalized
-                  expression levels.
+                  expression levels. In the fluorescence-based expression tables,{" "}
+                  <span className="text-foreground">0</span> denotes a zero expression value,{" "}
+                  <span className="text-foreground">-1</span> indicates that the corresponding
+                  developmental interval is not covered by the source expression data, and{" "}
+                  <span className="text-foreground">-2</span> flags an invalid entry associated with
+                  an unreliable morphological reconstruction.
                 </div>
               </div>
 
