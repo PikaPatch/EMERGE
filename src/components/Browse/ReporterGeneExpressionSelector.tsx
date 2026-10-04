@@ -259,7 +259,7 @@ export const GeneExpressionSelector = ({
                         <span className="text-muted-foreground">|</span>
                         <span className="text-muted-foreground">{gdata.FusionType} fusion</span>
                         <span className="text-muted-foreground">|</span>
-                        <span className="text-muted-foreground">Sample number={gdata.Replicates}</span>
+                        <span className="text-muted-foreground">{gdata.Replicates === 1 ? "1 sample" : `Averaged over ${gdata.Replicates} samples`}</span>
                       </div>
                       {gdata.PaperID && (
                         <span className="text-primary break-all text-[10px] w-full block min-w-0 leading-tight">
